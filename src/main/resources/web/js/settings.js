@@ -98,6 +98,18 @@
             const dir = byId('downloadDirInput');
             if (dir && dl.directory) dir.value = dl.directory;
         }
+
+        // Startup
+        const st = data.startup;
+        if (st) {
+            const enabled = byId('startupEnabledCheckbox');
+            if (enabled) enabled.checked = !!(st.modelId && st.modelId !== '');
+            const modelSelect = byId('startupModelSelect');
+            if (modelSelect && st.modelId) modelSelect.value = st.modelId;
+            const configSelect = byId('startupConfigSelect');
+            if (configSelect && st.configName) configSelect.value = st.configName;
+            updateStartupSectionVisibility();
+        }
         _populating = false;
     }
 
@@ -331,6 +343,101 @@
         }
     }
 
+    async function saveStartup() {
+        const enabled = byId('startupEnabledCheckbox');
+        const modelSelect = byId('startupModelSelect');
+        const configSelect = byId('startupConfigSelect');
+        const payload = {};
+        if (enabled && enabled.checked) {
+            if (modelSelect && modelSelect.value) payload.startupModelId = modelSelect.value;
+            if (configSelect && configSelect.value) payload.startupConfigName = configSelect.value;
+        }
+        try {
+            const resp = await fetch('/api/sys/setting', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (!data || !data.success) {
+                toast(t('toast.error', '错误'), (data && data.error) ? data.error : t('common.save_failed', '保存失败'), 'error');
+                return;
+            }
+            toast(t('toast.success', '成功'), t('common.saved', '已保存'), 'success');
+            loadSettings();
+        } catch (e) {
+            toast(t('toast.error', '错误'), t('common.network_request_failed', '网络请求失败'), 'error');
+        }
+    }
+
+    function updateStartupSectionVisibility() {
+        const enabled = byId('startupEnabledCheckbox');
+        const section = byId('startupConfigSection');
+        if (enabled && section) {
+            section.style.display = enabled.checked ? '' : 'none';
+        }
+    }
+
+    async function loadModelListForStartup() {
+        try {
+            const resp = await fetch('/api/models/list');
+            const result = await resp.json();
+            const modelSelect = byId('startupModelSelect');
+            if (!result || !result.success || !modelSelect) return;
+
+            const models = Array.isArray(result.models) ? result.models : [];
+            modelSelect.innerHTML = '<option value="">' + t('page.settings.startup.select_model', '请选择模型') + '</option>';
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id || '';
+                opt.textContent = (m.name || m.id || 'Unknown');
+                modelSelect.appendChild(opt);
+            });
+        } catch (e) {
+        }
+    }
+
+    async function loadModelConfigsForStartup(modelId) {
+        const configSelect = byId('startupConfigSelect');
+        if (!configSelect) return;
+
+        if (!modelId) {
+            configSelect.innerHTML = '<option value="">' + t('page.settings.startup.select_config', '请选择配置') + '</option>';
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/models/config/get?modelId=' + encodeURIComponent(modelId));
+            const result = await resp.json();
+            if (!result || !result.data) {
+                configSelect.innerHTML = '<option value="">' + t('page.settings.startup.no_config', '暂无配置') + '</option>';
+                return;
+            }
+
+            const data = result.data;
+            const configs = data.configs || {};
+            const selectedConfig = data.selectedConfig || '';
+            configSelect.innerHTML = '';
+
+            Object.keys(configs).forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                configSelect.appendChild(opt);
+            });
+
+            if (Object.keys(configs).length === 0) {
+                configSelect.innerHTML = '<option value="">' + t('page.settings.startup.no_config', '暂无配置') + '</option>';
+            }
+
+            if (selectedConfig && configs[selectedConfig]) {
+                configSelect.value = selectedConfig;
+            }
+        } catch (e) {
+            configSelect.innerHTML = '<option value="">' + t('page.settings.startup.no_config', '暂无配置') + '</option>';
+        }
+    }
+
     function init() {
         // Tab switching
         document.querySelectorAll('.settings-tab').forEach(tab => {
@@ -377,6 +484,27 @@
         // Download tab
         const saveDownloadBtn = byId('saveDownloadBtn');
         if (saveDownloadBtn) saveDownloadBtn.addEventListener('click', saveDownload);
+
+        // Startup tab
+        const saveStartupBtn = byId('saveStartupBtn');
+        if (saveStartupBtn) saveStartupBtn.addEventListener('click', saveStartup);
+
+        const startupEnabledCheckbox = byId('startupEnabledCheckbox');
+        if (startupEnabledCheckbox) {
+            startupEnabledCheckbox.addEventListener('change', function() {
+                updateStartupSectionVisibility();
+                if (this.checked && byId('startupModelSelect').options.length <= 1) {
+                    loadModelListForStartup();
+                }
+            });
+        }
+
+        const startupModelSelect = byId('startupModelSelect');
+        if (startupModelSelect) {
+            startupModelSelect.addEventListener('change', function() {
+                loadModelConfigsForStartup(this.value);
+            });
+        }
     }
 
     let _initialized = false;

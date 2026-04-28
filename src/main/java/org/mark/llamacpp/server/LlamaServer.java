@@ -230,6 +230,57 @@ public class LlamaServer {
 					}
 				}
 			}
+		} else if (startupModelId != null && !startupModelId.isEmpty()) {
+			logger.info("检测到启动模型配置，尝试自动加载模型：{}", startupModelId);
+
+			GGUFModel model = serverManager.findModelById(startupModelId);
+			if (model == null) {
+				logger.error("错误：未找到配置中的模型 '{}'，请检查 application.json 中的 startup.modelId 配置。", startupModelId);
+			} else {
+				Map<String, Object> launchConfig = configManager.getModelLaunchConfigBundle(startupModelId);
+				if (launchConfig == null || launchConfig.isEmpty()) {
+					logger.error("错误：模型 '{}' 没有可用的启动配置。请先通过界面配置启动参数。", startupModelId);
+				} else {
+					Map<String, Object> actualConfig = null;
+					Object configsObj = launchConfig.get("configs");
+					String configToUse = startupConfigName;
+					if (configToUse == null || configToUse.isEmpty()) {
+						configToUse = (String) launchConfig.getOrDefault("selectedConfig", "默认配置");
+					}
+					if (configsObj instanceof Map) {
+						Map<String, Object> configs = (Map<String, Object>) configsObj;
+						actualConfig = (Map<String, Object>) configs.get(configToUse);
+					}
+
+					if (actualConfig == null || actualConfig.isEmpty()) {
+						logger.error("错误：模型 '{}' 没有可用的启动配置（配置名: {}）。请先配置启动参数。", startupModelId, configToUse);
+					} else {
+						String llamaBinPath = (String) actualConfig.getOrDefault("llamaBinPath", "");
+						Object deviceObj = actualConfig.getOrDefault("device", new ArrayList<String>());
+						List<String> device = (deviceObj instanceof List) ? (List<String>) deviceObj : new ArrayList<String>();
+						Integer mg = null;
+						Object mgObj = actualConfig.get("mg");
+						if (mgObj instanceof Number) {
+							mg = ((Number) mgObj).intValue();
+						}
+						boolean enableVision = Boolean.parseBoolean(String.valueOf(actualConfig.getOrDefault("enableVision", false)));
+						String cmd = (String) actualConfig.getOrDefault("cmd", "");
+						String extraParams = (String) actualConfig.getOrDefault("extraParams", "");
+						String chatTemplateFilePath = (String) actualConfig.getOrDefault("chatTemplateFile", "");
+
+						if (llamaBinPath.isEmpty()) {
+							logger.error("错误：模型 '{}' 的启动配置中缺少 llamaBinPath 参数。", startupModelId);
+						} else {
+							boolean started = serverManager.loadModelAsyncFromCmd(startupModelId, llamaBinPath, device, mg, enableVision, cmd, extraParams, chatTemplateFilePath);
+							if (started) {
+								logger.info("启动模型请求已提交（来自配置文件）");
+							} else {
+								logger.error("启动模型 '{}' 失败（来自配置文件），请查看日志获取详细信息。", startupModelId);
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	
@@ -340,6 +391,10 @@ public class LlamaServer {
 	private static volatile SslContext httpsSslContext;
 
 	private static volatile String nodeRole = null;
+
+	private static volatile String startupModelId = null;
+
+	private static volatile String startupConfigName = null;
 
 	//##############################################################################################################################
 	
@@ -511,6 +566,16 @@ public class LlamaServer {
 		if (root.has("nodeRole")) {
 			nodeRole = root.get("nodeRole").getAsString();
 		}
+
+		if (root.has("startup")) {
+			JsonObject startup = root.getAsJsonObject("startup");
+			if (startup.has("modelId")) {
+				startupModelId = startup.get("modelId").getAsString();
+			}
+			if (startup.has("configName")) {
+				startupConfigName = startup.get("configName").getAsString();
+			}
+		}
 	}
     
     /**
@@ -567,7 +632,16 @@ public class LlamaServer {
 				https.addProperty("keystorePath", httpsCertPath);
 				https.addProperty("keystorePassword", httpsPassword);
 				root.add("https", https);
-	
+
+				if (startupModelId != null && !startupModelId.isEmpty()) {
+					JsonObject startup = new JsonObject();
+					startup.addProperty("modelId", startupModelId);
+					if (startupConfigName != null && !startupConfigName.isEmpty()) {
+						startup.addProperty("configName", startupConfigName);
+					}
+					root.add("startup", startup);
+				}
+
 				String json = GSON.toJson(root);
 	
 				Path configPath = Paths.get("config/application.json");
@@ -863,6 +937,22 @@ public static boolean isMcpServerRunning() {
 
     private static DefaultMcpServiceImpl createDefaultMcpServer() {
     	return new DefaultMcpServiceImpl(DEFAULT_MCP_SERVER_PORT);
+    }
+    
+    public static String getStartupModelId() {
+    	return startupModelId;
+    }
+
+    public static String getStartupConfigName() {
+    	return startupConfigName;
+    }
+
+    public static void updateStartupModelConfig(String modelId, String configName) {
+    	synchronized (APPLICATION_CONFIG_LOCK) {
+    		startupModelId = (modelId == null || modelId.trim().isEmpty()) ? null : modelId.trim();
+    		startupConfigName = (configName == null || configName.trim().isEmpty()) ? null : configName.trim();
+    		saveApplicationConfig();
+    	}
     }
     
     // ==================== 默认路径的get方法 ====================

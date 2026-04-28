@@ -366,6 +366,9 @@
                     <button class="settings-tab" data-tab="download">
                         <i class="fas fa-download"></i> <span data-i18n="page.settings.tab.download">page.settings.tab.download</span>
                     </button>
+                    <button class="settings-tab" data-tab="startup">
+                        <i class="fas fa-rocket"></i> <span data-i18n="page.settings.tab.startup">page.settings.tab.startup</span>
+                    </button>
                 </div>
 
                 <div class="settings-content">
@@ -616,6 +619,40 @@
                                 </div>
                                 <div class="settings-actions-row">
                                     <button class="btn btn-primary" id="saveDownloadBtn" data-i18n="common.save">common.save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Startup -->
+                    <div class="settings-tab-panel" data-tab-panel="startup">
+                        <div class="settings-panel">
+                            <div class="settings-panel-body">
+                                <div class="startup-section">
+                                    <div class="form-group startup-toggle-group">
+                                        <label class="form-label checkbox-label">
+                                            <input type="checkbox" id="startupEnabledCheckbox">
+                                            <span data-i18n="page.settings.startup.enable">page.settings.startup.enable</span>
+                                        </label>
+                                        <small class="form-text" data-i18n="page.settings.startup.desc">page.settings.startup.desc</small>
+                                    </div>
+                                    <div id="startupConfigSection" style="display:none;">
+                                        <div class="form-group">
+                                            <label class="form-label" data-i18n="page.settings.startup.model">page.settings.startup.model</label>
+                                            <select class="form-control" id="startupModelSelect">
+                                                <option value="" data-i18n="page.settings.startup.select_model">page.settings.startup.select_model</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label" data-i18n="page.settings.startup.config">page.settings.startup.config</label>
+                                            <select class="form-control" id="startupConfigSelect">
+                                                <option value="" data-i18n="page.settings.startup.select_config">page.settings.startup.select_config</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="settings-actions-row">
+                                    <button class="btn btn-primary" id="saveStartupBtn" data-i18n="common.save">common.save</button>
                                 </div>
                             </div>
                         </div>

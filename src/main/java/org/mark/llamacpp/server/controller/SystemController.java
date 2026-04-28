@@ -117,6 +117,16 @@ public class SystemController implements BaseController {
 			this.handleSysSettingRequest(ctx, request);
 			return true;
 		}
+		// 获取启动模型配置
+		if (uri.startsWith("/api/sys/startup") && request.method() == HttpMethod.GET) {
+			this.handleStartupModelGetRequest(ctx, request);
+			return true;
+		}
+		// 设置启动模型配置
+		if (uri.startsWith("/api/sys/startup")) {
+			this.handleStartupModelSetRequest(ctx, request);
+			return true;
+		}
 		// 保存搜索设置
 		if (uri.startsWith("/api/search/setting")) {
 			this.handleSearchSettingRequest(ctx, request);
@@ -624,6 +634,11 @@ public class SystemController implements BaseController {
 			https.put("keystorePassword", LlamaServer.getHttpsPassword());
 			data.put("https", https);
 			
+			Map<String, Object> startup = new HashMap<>();
+			startup.put("modelId", LlamaServer.getStartupModelId());
+			startup.put("configName", LlamaServer.getStartupConfigName());
+			data.put("startup", startup);
+			
 			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
 		} catch (Exception e) {
 			logger.info("获取系统设置时发生错误", e);
@@ -663,11 +678,14 @@ public class SystemController implements BaseController {
 			String httpsCertPath = JsonUtil.getJsonString(obj, "httpsCertPath", null);
 			String httpsPassword = JsonUtil.getJsonString(obj, "httpsPassword", null);
 			String downloadDirectory = JsonUtil.getJsonString(obj, "downloadDirectory", null);
+			String startupModelId = JsonUtil.getJsonString(obj, "startupModelId", null);
+			String startupConfigName = JsonUtil.getJsonString(obj, "startupConfigName", null);
 
 			if (ollamaPort == null && lmstudioPort == null && logRequestUrl == null && logRequestHeader == null && logRequestBody == null
 				&& webPort == null && anthropicPort == null && apiKeyEnabled == null && apiKey == null
 				&& httpsEnabled == null && httpsCertPath == null && httpsPassword == null
-				&& downloadDirectory == null) {
+				&& downloadDirectory == null
+				&& startupModelId == null && startupConfigName == null) {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("缺少可保存参数"));
 				return;
 			}
@@ -716,6 +734,10 @@ public class SystemController implements BaseController {
 				LlamaServer.setDownloadDirectory(downloadDirectory);
 			}
 
+			if (startupModelId != null || startupConfigName != null) {
+				LlamaServer.updateStartupModelConfig(startupModelId, startupConfigName);
+			}
+
 			Map<String, Object> data = new HashMap<>();
 			Map<String, Object> ollama = new HashMap<>();
 			ollama.put("enabled", LlamaServer.isOllamaCompatEnabled());
@@ -737,6 +759,58 @@ public class SystemController implements BaseController {
 		} catch (Exception e) {
 			logger.info("处理系统设置请求时发生错误", e);
 			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("保存系统设置失败: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * 	获取启动模型配置
+	 * @param ctx
+	 * @param request
+	 * @throws RequestMethodException
+	 */
+	private void handleStartupModelGetRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
+		if (request.method() == HttpMethod.OPTIONS) {
+			LlamaServer.sendCorsResponse(ctx);
+			return;
+		}
+		try {
+			Map<String, Object> data = new HashMap<>();
+			data.put("modelId", LlamaServer.getStartupModelId());
+			data.put("configName", LlamaServer.getStartupConfigName());
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
+		} catch (Exception e) {
+			logger.info("获取启动模型配置时发生错误", e);
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("获取启动模型配置失败: " + e.getMessage()));
+		}
+	}
+	
+	/**
+	 * 	设置启动模型配置
+	 * @param ctx
+	 * @param request
+	 * @throws RequestMethodException
+	 */
+	private void handleStartupModelSetRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
+		if (request.method() == HttpMethod.OPTIONS) {
+			LlamaServer.sendCorsResponse(ctx);
+			return;
+		}
+		this.assertRequestMethod(request.method() != HttpMethod.POST, "只支持POST请求");
+		try {
+			JsonObject obj = parseJsonBody(ctx, request);
+			if (obj == null) {
+				return;
+			}
+			String modelId = JsonUtil.getJsonString(obj, "modelId", null);
+			String configName = JsonUtil.getJsonString(obj, "configName", null);
+			LlamaServer.updateStartupModelConfig(modelId, configName);
+			Map<String, Object> data = new HashMap<>();
+			data.put("modelId", LlamaServer.getStartupModelId());
+			data.put("configName", LlamaServer.getStartupConfigName());
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
+		} catch (Exception e) {
+			logger.info("处理启动模型配置请求时发生错误", e);
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("保存启动模型配置失败: " + e.getMessage()));
 		}
 	}
 
