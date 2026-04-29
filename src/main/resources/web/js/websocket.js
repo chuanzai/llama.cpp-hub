@@ -62,6 +62,7 @@ function handleWebSocketMessage(message) {
                 case 'notification': showToast(data.title || '通知', data.message || '', data.level || 'info'); break;
                 case 'model_status': handleModelStatusUpdate(data); break;
                 case 'model_slots': handleModelSlotsUpdate(data); break;
+                case 'model_busy': handleModelBusyEvent(data); break;
                 case 'console':
                     {
                         const consoleMain = document.getElementById('main-console');
@@ -80,7 +81,7 @@ function handleWebSocketMessage(message) {
                                 const nodeKey = data.modelId ? '[' + data.nodeId + '/' + data.modelId + ']' : '[' + data.nodeId + ']';
                                 text = nodeKey + ' ' + text;
                             }
-                            appendLogLine(text);
+                            appendLogLine(text, data.timestamp);
                         }
                     }
                     break;
@@ -172,4 +173,9 @@ function handleModelSlotsUpdate(data) {
     if (typeof updateModelSlotsDom === 'function') {
         updateModelSlotsDom(data.modelId, slots, data.nodeId);
     }
+}
+
+function handleModelBusyEvent(data) {
+    if (!data || !data.modelId) return;
+    applyModelPatch(data.modelId, { busy: !!data.busy }, data.nodeId);
 }

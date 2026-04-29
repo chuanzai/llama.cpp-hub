@@ -5,6 +5,17 @@
     return fallback == null ? key : fallback;
 }
 
+function getNodeColor(nodeId) {
+    if (!nodeId || nodeId === 'local') return '';
+    var hash = 0;
+    for (var i = 0; i < nodeId.length; i++) {
+        hash = ((hash << 5) - hash) + nodeId.charCodeAt(i);
+        hash |= 0;
+    }
+    var hue = ((Math.abs(hash) * 137.508) % 360).toFixed(1);
+    return hue;
+}
+
 function formatBuildCreatedTime(createdTime) {
     if (!createdTime) return '';
     const date = new Date(createdTime);
@@ -77,11 +88,13 @@ function loadModels() {
                                 isLoading: !!model.isLoading,
                                 isLoaded: !!loadedModel,
                                 status: loadedModel ? (loadedModel.status || 'loaded') : 'stopped',
-                                port: loadedModel ? loadedModel.port : null
+                                port: loadedModel ? loadedModel.port : null,
+                                busy: loadedModel ? !!loadedModel.busy : false
                             };
                         });
                         currentModelsData = modelsWithStatus;
                         sortAndRenderModels();
+                        populateNodeFilter();
                         if (loadedData.success) {
                             const loadedCount = (loadedData.models || []).length;
                             const el = document.getElementById('loadedModelsCount');
@@ -243,16 +256,48 @@ function getParamsCount(name) {
     return 0;
 }
 
-function sortAndRenderModels() {
-    const sortType = document.getElementById('modelSortSelect').value;
-    if (!currentModelsData) return;
+function populateNodeFilter() {
+    var sel = document.getElementById('modelNodeFilter');
+    if (!sel) return;
+    var nodes = {};
+    if (Array.isArray(currentModelsData)) {
+        currentModelsData.forEach(function (m) {
+            if (m && m.nodeId && m.nodeId !== 'local') {
+                if (!nodes[m.nodeId]) {
+                    nodes[m.nodeId] = m.nodeName || m.nodeId;
+                }
+            }
+        });
+    }
+    var current = sel.value;
+    while (sel.options.length > 2) sel.remove(2);
+    var keys = Object.keys(nodes);
+    keys.sort();
+    for (var i = 0; i < keys.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = keys[i];
+        opt.textContent = nodes[keys[i]];
+        sel.appendChild(opt);
+    }
+    if (current === 'all' || current === 'local' || nodes[current]) {
+        sel.value = current;
+    } else {
+        sel.value = 'all';
+    }
+}
 
-    const nodeFilter = document.getElementById('modelNodeFilter').value;
+function sortAndRenderModels() {
+    const sortTypeEl = document.getElementById('modelSortSelect');
+    if (!sortTypeEl || !currentModelsData) return;
+    const sortType = sortTypeEl.value;
+
+    const nodeFilterEl = document.getElementById('modelNodeFilter');
+    const nodeFilter = nodeFilterEl ? nodeFilterEl.value : 'all';
     let filtered = currentModelsData;
     if (nodeFilter === 'local') {
         filtered = currentModelsData.filter(m => m && (!m.nodeId || m.nodeId === 'local'));
-    } else if (nodeFilter === 'remote') {
-        filtered = currentModelsData.filter(m => m && m.nodeId && m.nodeId !== 'local');
+    } else if (nodeFilter && nodeFilter !== 'all') {
+        filtered = currentModelsData.filter(m => m && m.nodeId === nodeFilter);
     }
 
     const comparator = getModelSortComparator(sortType);
@@ -295,9 +340,19 @@ function getModelSortComparator(sortType) {
 function renderModelsList(models) {
     const modelsList = document.getElementById('modelsList');
     if (!models || models.length === 0) {
-        const nodeFilter = document.getElementById('modelNodeFilter').value;
+    const nodeFilterEl = document.getElementById('modelNodeFilter');
+    const nodeFilter = nodeFilterEl ? nodeFilterEl.value : 'all';
         let emptyTitle, emptyText, emptyBtn = '';
-        if (nodeFilter === 'remote') {
+        if (nodeFilter && nodeFilter !== 'all' && nodeFilter !== 'local') {
+            var nodeName = '';
+            var sel = document.getElementById('modelNodeFilter');
+            if (sel) {
+                var opt = sel.querySelector('option[value="' + nodeFilter + '"]');
+                if (opt) nodeName = opt.textContent;
+            }
+            emptyTitle = nodeName ? t('page.model.empty_node_title', '节点 [{name}] 没有模型').replace('{name}', nodeName) : t('page.model.empty_node_title', '节点没有模型');
+            emptyText = t('page.model.empty_node_desc', '该远程节点上没有发现模型');
+        } else if (nodeFilter === 'local') {
             emptyTitle = t('page.model.empty_remote_title', '没有远程模型');
             emptyText = t('page.model.empty_remote_desc', '当前没有配置远程节点');
         } else if (nodeFilter === 'local') {
@@ -347,7 +402,10 @@ function renderModelsList(models) {
         const isFavourite = !!model.favourite;
         const nodeId = model.nodeId || '';
         const nodeName = model.nodeName || '';
-        const nodeBadge = nodeId && nodeId !== 'local' ? `<span class="node-badge" title="${nodeName || nodeId}"><i class="fas fa-server"></i> ${nodeName || nodeId}</span>` : '';
+        const nodeColor = getNodeColor(nodeId);
+        const nodeBadge = nodeId && nodeId !== 'local'
+            ? '<span class="node-badge" style="color:hsl(' + nodeColor + ',65%,70%);background-color:hsl(' + nodeColor + ',50%,12%);" title="' + (nodeName || nodeId) + '"><i class="fas fa-server"></i> ' + (nodeName || nodeId) + '</span>'
+            : '';
 
         let actionButtons = '';
         if (isLoading) {
@@ -379,8 +437,9 @@ function renderModelsList(models) {
         }
 
         const isRemote = nodeId && nodeId !== 'local';
+        const borderStyle = isRemote ? ' style="border-left-color:hsl(' + nodeColor + ',65%,50%);"' : '';
         html += `
-                    <div class="model-item ${isRemote ? 'model-item-remote' : ''}">
+                    <div class="model-item"${borderStyle}>
                         <button class="model-fav-btn ${isFavourite ? 'active' : ''}" onclick="toggleFavouriteModel(event, decodeURIComponent('${encodeURIComponent(model.id)}'), '${nodeId || 'local'}')" title="${isFavourite ? t('page.model.fav.remove', '取消喜好') : t('page.model.fav.add', '标记喜好')}">
                             <i class="${isFavourite ? 'fas' : 'far'} fa-star"></i>
                         </button>
@@ -404,6 +463,7 @@ function renderModelsList(models) {
                         </div>
                         <div class="model-status-badge ${statusClass}">
                             <i class="fas ${statusIcon}"></i> <span>${statusText}</span>
+                            ${model.busy && model.isLoaded ? '<span class="model-busy-indicator"><i class="fas fa-sync-alt fa-spin"></i> ' + t('page.model.status.busy', '工作中') + '</span>' : ''}
                         </div>
                         <div class="model-actions">${actionButtons}</div>
                     </div>

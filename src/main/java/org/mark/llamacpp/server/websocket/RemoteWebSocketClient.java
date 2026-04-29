@@ -16,6 +16,7 @@ import java.net.http.WebSocket;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -144,7 +145,7 @@ public class RemoteWebSocketClient {
             logger.info("正在连接远程节点 WebSocket {}: {} -> {}", nodeId, baseUrl, wsUri);
 
             HttpClient.Builder clientBuilder = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofSeconds(10));
+                    .connectTimeout(Duration.ofSeconds(2));
             if ("wss".equals(wsScheme)) {
                 clientBuilder.sslContext(createTrustAllSSLContext());
             }
