@@ -105,9 +105,27 @@
             const enabled = byId('startupEnabledCheckbox');
             if (enabled) enabled.checked = !!(st.modelId && st.modelId !== '');
             const modelSelect = byId('startupModelSelect');
-            if (modelSelect && st.modelId) modelSelect.value = st.modelId;
             const configSelect = byId('startupConfigSelect');
-            if (configSelect && st.configName) configSelect.value = st.configName;
+            if (modelSelect && st.modelId && st.modelId !== '') {
+                // 如果有保存的模型 ID，先确保模型列表已加载
+                if (modelSelect.options.length <= 1) {
+                    loadModelListForStartup().then(() => {
+                        modelSelect.value = st.modelId;
+                        if (configSelect && st.configName) {
+                            loadModelConfigsForStartup(st.modelId).then(() => {
+                                configSelect.value = st.configName;
+                            });
+                        }
+                    });
+                } else {
+                    modelSelect.value = st.modelId;
+                    if (configSelect && st.configName) {
+                        loadModelConfigsForStartup(st.modelId).then(() => {
+                            configSelect.value = st.configName;
+                        });
+                    }
+                }
+            }
             updateStartupSectionVisibility();
         }
         _populating = false;

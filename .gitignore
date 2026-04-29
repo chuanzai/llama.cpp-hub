@@ -15,3 +15,5 @@
 /ssl/
 /deploy/
 /*.tar.gz
+/llama.cpp-hub-v*/
+.DS_Store
