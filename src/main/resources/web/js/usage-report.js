@@ -102,7 +102,7 @@
         ctx.scale(dpr, dpr);
 
         const count = data.length;
-        const pad = { top: 14, bottom: 30, left: 46, right: 14 };
+        const pad = { top: 14, bottom: 30, left: 64, right: 14 };
         const cw = w - pad.left - pad.right;
         const ch = h - pad.top - pad.bottom;
         const barW = Math.min(cw / count * 0.28, 28);
