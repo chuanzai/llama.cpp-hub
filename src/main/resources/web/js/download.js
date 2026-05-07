@@ -552,8 +552,14 @@
             return;
         }
 
+        const autoCreate = document.getElementById('autoCreateFolder');
+        const autoCreateFolder = autoCreate ? autoCreate.checked : true;
+        const folderNameEl = document.getElementById('downloadFolderName');
+        const folderName = !autoCreateFolder && folderNameEl ? String(folderNameEl.value || '').trim() : '';
+
         const payload = { url, path };
         if (fileName) payload.fileName = fileName;
+        if (folderName) payload.folderName = folderName;
 
         fetch('/api/downloads/create', {
             method: 'POST',

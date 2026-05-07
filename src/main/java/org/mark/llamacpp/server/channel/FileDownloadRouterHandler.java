@@ -238,7 +238,7 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 //				if (i == 0) {
 //					fileName = sanitizeFileName(req.getName());
 //				}
-				Map<String, Object> r = createAndStartTask(url, targetDir.toString(), null);
+				Map<String, Object> r = createAndStartTask(url, targetDir.toString(), null, null);
 				if (!Boolean.TRUE.equals(r.get("success"))) {
 					allSuccess = false;
 				}
@@ -341,6 +341,7 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 			String url = (String) requestData.get("url");
 			String path = (String) requestData.get("path");
 			String fileName = (String) requestData.get("fileName");
+			String folderName = (String) requestData.get("folderName");
 
 			if (url == null || url.trim().isEmpty()) {
 				LlamaServer.sendErrorResponse(ctx, HttpResponseStatus.BAD_REQUEST, "URL不能为空");
@@ -351,7 +352,7 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 				LlamaServer.sendErrorResponse(ctx, HttpResponseStatus.BAD_REQUEST, "保存路径不能为空");
 				return;
 			}
-			var result = createAndStartTask(url, path, fileName);
+			var result = createAndStartTask(url, path, fileName, folderName);
 			LlamaServer.sendJsonResponse(ctx, result);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -534,7 +535,7 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 		}
 	}
 
-	private Map<String, Object> createAndStartTask(String url, String path, String fileName) {
+	private Map<String, Object> createAndStartTask(String url, String path, String fileName, String folderName) {
 		Map<String, Object> result = new HashMap<>();
 		try {
 			String selectedName = trimToNull(fileName);
@@ -549,14 +550,24 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 				throw new IllegalArgumentException("文件名不合法");
 			}
 
-			// Create folder named after file (without extension)
-			String folderName = selectedName;
-			int dotIndex = selectedName.lastIndexOf('.');
-			if (dotIndex > 0) {
-				folderName = selectedName.substring(0, dotIndex);
+			// Determine target folder
+			String targetFolder = trimToNull(folderName);
+			if (targetFolder == null) {
+				// Auto-create folder from file name (without extension)
+				targetFolder = selectedName;
+				int dotIndex = selectedName.lastIndexOf('.');
+				if (dotIndex > 0) {
+					targetFolder = selectedName.substring(0, dotIndex);
+				}
+			} else {
+				targetFolder = targetFolder.replaceAll("[<>:\"/\\\\|?*]", "_").trim();
 			}
+			if (targetFolder.isEmpty()) {
+				throw new IllegalArgumentException("文件夹名不合法");
+			}
+
 			Path base = Paths.get(path);
-			Path targetDir = base.resolve(folderName);
+			Path targetDir = base.resolve(targetFolder);
 			Files.createDirectories(targetDir);
 
 			Path targetFile = targetDir.resolve(selectedName);
@@ -570,25 +581,6 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 			result.put("error", "创建下载任务失败: " + e.getMessage());
 		}
 		return result;
-	}
-
-	private static Path resolveTargetFile(String path, String fileName, String url) {
-		Path base = Paths.get(path);
-		String selectedName = trimToNull(fileName);
-		if (selectedName == null) {
-			selectedName = inferFileName(url);
-		}
-		if (selectedName == null || selectedName.isBlank()) {
-			throw new IllegalArgumentException("无法推断文件名");
-		}
-		selectedName = selectedName.replaceAll("[<>:\"/\\\\|?*]", "_").trim();
-		if (selectedName.isEmpty()) {
-			throw new IllegalArgumentException("文件名不合法");
-		}
-		if (Files.exists(base) && !Files.isDirectory(base)) {
-			return base;
-		}
-		return base.resolve(selectedName);
 	}
 
 	private static String inferFileName(String url) {

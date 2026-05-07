@@ -1295,6 +1295,20 @@
                         <input type="text" class="form-control" id="downloadFileName" name="downloadFileName" placeholder="modal.download_create.filename_placeholder" data-i18n="modal.download_create.filename_placeholder" data-i18n-attr="placeholder">
                         <small class="form-text" data-i18n="modal.download_create.filename_desc">modal.download_create.filename_desc</small>
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" id="autoCreateFolder" checked onchange="toggleAutoFolder()">
+                            <span data-i18n="modal.download_create.auto_folder">自动创建文件夹</span>
+                        </label>
+                        <small class="form-text" data-i18n="modal.download_create.auto_folder_desc">根据文件名自动创建文件夹存放下载文件</small>
+                    </div>
+
+                    <div class="form-group" id="folderNameGroup" style="display:none">
+                        <label class="form-label" for="downloadFolderName" data-i18n="modal.download_create.folder_name">文件夹名称</label>
+                        <input type="text" class="form-control" id="downloadFolderName" name="folderName" placeholder="my-model-folder">
+                        <small class="form-text" data-i18n="modal.download_create.folder_name_desc">下载的文件将放在此文件夹中</small>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -2197,6 +2211,8 @@
             if (id === 'createDownloadModal') {
                 const form = document.getElementById('createDownloadForm');
                 if (form) form.reset();
+                const cb = document.getElementById('autoCreateFolder');
+                if (cb) { cb.checked = true; toggleAutoFolder(); }
             } else if (id === 'settingsModal') {
                 const form = document.getElementById('settingsForm');
                 if (form) form.reset();
@@ -2213,6 +2229,12 @@
                 }
             }
         };
+
+        function toggleAutoFolder() {
+            const cb = document.getElementById('autoCreateFolder');
+            const group = document.getElementById('folderNameGroup');
+            if (cb && group) group.style.display = cb.checked ? 'none' : '';
+        }
 
         function showToast(title, msg, type = 'info') {
             const container = document.getElementById('toastContainer');
