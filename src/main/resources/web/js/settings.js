@@ -398,21 +398,29 @@
         var nid = escHtml(node.nodeId);
         var actionsHtml = '';
         if (isMaster) {
-            actionsHtml = '<div style="display:flex;align-items:center;gap:0.25rem;">'
+            actionsHtml = '<div class="node-row-actions">'
                 + '<button class="btn btn-sm btn-secondary" onclick="SettingsPage.testNode(\'' + nid + '\',this)" title="测试连通性"><i class="fas fa-plug"></i></button>'
                 + '<button class="btn btn-sm btn-secondary" onclick="SettingsPage.editNode(\'' + nid + '\')" title="编辑"><i class="fas fa-edit"></i></button>'
                 + '<button class="btn btn-sm btn-danger" onclick="SettingsPage.removeNode(\'' + nid + '\')" title="删除"><i class="fas fa-trash"></i></button>'
-                + '<input type="checkbox" ' + (node.enabled ? 'checked' : '') + ' onchange="SettingsPage.toggleNode(\'' + nid + '\',this.checked)" style="margin-left:0.25rem;">'
+                + '<label class="node-enabled-toggle" title="' + t('common.enable', '启用') + '">'
+                + '<span class="node-enabled-text">' + t('common.enable', '启用') + '</span>'
+                + '<input class="node-enabled-checkbox" type="checkbox" ' + (node.enabled ? 'checked' : '') + ' onchange="SettingsPage.toggleNode(\'' + nid + '\',this.checked)">'
+                + '<span class="node-enabled-switch" aria-hidden="true"></span>'
+                + '</label>'
                 + '</div>';
         }
-        return '<div class="settings-toggle-row" style="flex-wrap:wrap;">'
-            + '<div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;">'
+        return '<div class="node-card">'
+            + '<div class="node-card-main">'
+            + '<div class="node-card-header">'
             + '<span class="status-dot ' + statusClass + '" title="' + statusLabel + '"></span>'
-            + '<div style="min-width:0;">'
-            + '<div style="font-weight:600;font-size:0.8rem;">' + escHtml(node.name || node.nodeId) + ' <span style="font-weight:400;color:var(--text-secondary);">(' + nid + ')</span></div>'
-            + '<div style="font-size:0.7rem;color:var(--text-secondary);word-break:break-all;">' + escHtml(node.baseUrl) + '</div>'
-            + '</div></div>'
-            + '<div style="display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;">' + tagsHtml + '</div>'
+            + '<div class="node-card-title-group">'
+            + '<div class="node-card-title">' + escHtml(node.name || node.nodeId) + ' <span class="node-card-id">(' + nid + ')</span></div>'
+            + '<div class="node-card-url">' + escHtml(node.baseUrl) + '</div>'
+            + '</div>'
+            + '<span class="node-status-badge ' + statusClass + '">' + statusLabel + '</span>'
+            + '</div>'
+            + (tagsHtml ? ('<div class="node-card-tags">' + tagsHtml + '</div>') : '')
+            + '</div>'
             + actionsHtml + '</div>';
     }
 
