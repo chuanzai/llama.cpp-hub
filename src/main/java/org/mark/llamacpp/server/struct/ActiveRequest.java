@@ -26,7 +26,7 @@ public class ActiveRequest {
         this.requestId = requestId;
         this.modelId = modelId;
         this.endpoint = endpoint;
-        this.startTime = System.nanoTime();
+        this.startTime = System.currentTimeMillis();
         this.status = RequestStatus.CREATED;
         this.phase = Phase.PREFILL;
     }
@@ -72,6 +72,6 @@ public class ActiveRequest {
     }
 
     public long elapsedMs() {
-        return (System.nanoTime() - startTime) / 1_000_000L;
+        return System.currentTimeMillis() - startTime;
     }
 }

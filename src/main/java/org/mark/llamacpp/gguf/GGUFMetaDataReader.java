@@ -9,9 +9,16 @@ public class GGUFMetaDataReader {
         try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(file, "r");
              java.nio.channels.FileChannel channel = raf.getChannel()) {
             long size = channel.size();
-            long mapSize = Math.min(size, 64L * 1024 * 1024);
-            java.nio.ByteBuffer buffer = channel.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, mapSize);
+            int bufSize = (int) Math.min(size, 64L * 1024 * 1024);
+            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(bufSize);
             buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            int totalRead = 0;
+            while (totalRead < bufSize) {
+                int n = channel.read(buffer);
+                if (n == -1) break;
+                totalRead += n;
+            }
+            buffer.flip();
             byte[] magic = new byte[4];
             buffer.get(magic);
             String m = new String(magic, java.nio.charset.StandardCharsets.US_ASCII);

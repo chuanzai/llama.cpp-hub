@@ -19,6 +19,7 @@ import org.mark.file.downloader.DownloadTaskManager;
 import org.mark.file.downloader.DownloadTaskStatus;
 import org.mark.llamacpp.download.struct.ModelDownloadRequest;
 import org.mark.llamacpp.server.LlamaServer;
+import org.mark.llamacpp.server.NodeManager;
 import org.mark.llamacpp.server.tools.JsonUtil;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -104,16 +105,6 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 		// 获取状态
 		if (uri.startsWith("/api/downloads/stats")) {
 			this.handleGetStats(ctx);
-			return;
-		}
-		// 获取下载路径
-		if (uri.startsWith("/api/downloads/path/get")) {
-			this.handleGetDownloadPath(ctx);
-			return;
-		}
-		// 设置下载路径
-		if (uri.startsWith("/api/downloads/path/set")) {
-			this.handleSetDownloadPath(ctx, request);
 			return;
 		}
 		ctx.fireChannelRead(request.retain());
@@ -238,7 +229,7 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 //				if (i == 0) {
 //					fileName = sanitizeFileName(req.getName());
 //				}
-				Map<String, Object> r = createAndStartTask(url, targetDir.toString(), null);
+				Map<String, Object> r = createAndStartTask(url, targetDir.toString(), null, null);
 				if (!Boolean.TRUE.equals(r.get("success"))) {
 					allSuccess = false;
 				}
@@ -312,11 +303,42 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 	 */
 	private void handleListDownloads(ChannelHandlerContext ctx) {
 		try {
-			List<DownloadTaskInfo> tasks = taskManager.listTasks();
 			List<Map<String, Object>> downloads = new ArrayList<>();
-			for (DownloadTaskInfo task : tasks) {
+
+			// Local tasks
+			for (DownloadTaskInfo task : taskManager.listTasks()) {
 				downloads.add(toTaskView(task));
 			}
+
+			// Remote tasks: proxy to all enabled nodes
+			List<org.mark.llamacpp.server.LlamaHubNode> enabledNodes = NodeManager.getInstance().listEnabledNodes();
+			for (org.mark.llamacpp.server.LlamaHubNode node : enabledNodes) {
+				NodeManager.HttpResult remoteResult = NodeManager.getInstance()
+						.callRemoteApi(node.getNodeId(), "GET", "api/downloads/list", null);
+				if (remoteResult.isSuccess() && remoteResult.getBody() != null) {
+					try {
+						com.google.gson.JsonObject root = com.google.gson.JsonParser.parseString(remoteResult.getBody()).getAsJsonObject();
+						com.google.gson.JsonArray remoteDownloads = root.getAsJsonArray("downloads");
+						if (remoteDownloads != null) {
+							String nodeId = node.getNodeId();
+							String nodeName = node.getName() != null ? node.getName() : nodeId;
+							for (int i = 0; i < remoteDownloads.size(); i++) {
+								com.google.gson.JsonElement elem = remoteDownloads.get(i);
+								if (!elem.isJsonObject()) continue;
+								com.google.gson.JsonObject d = elem.getAsJsonObject();
+								d.addProperty("nodeId", nodeId);
+								d.addProperty("nodeName", nodeName);
+								@SuppressWarnings("unchecked")
+								Map<String, Object> taskView = JsonUtil.fromJson(d, Map.class);
+								downloads.add(taskView);
+							}
+						}
+					} catch (Exception e) {
+						// skip malformed response
+					}
+				}
+			}
+
 			Map<String, Object> result = new HashMap<>();
 			result.put("success", true);
 			result.put("downloads", downloads);
@@ -332,26 +354,35 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 	 * @param request
 	 */
 	private void handleCreateDownload(ChannelHandlerContext ctx, FullHttpRequest request) {
-		
 		try {
 			String content = request.content().toString(CharsetUtil.UTF_8);
+
+			// Check for remote node
+			com.google.gson.JsonObject json = JsonUtil.fromJson(content, com.google.gson.JsonObject.class);
+			if (json != null) {
+				String nodeId = JsonUtil.getJsonString(json, "nodeId");
+				if (!nodeId.isEmpty() && !"local".equals(nodeId)) {
+					json.remove("nodeId");
+					NodeManager.HttpResult result = NodeManager.getInstance()
+							.callRemoteApi(nodeId, "POST", "api/downloads/create", json);
+					NodeManager.writeHttpResultToChannel(ctx, result, "download");
+					return;
+				}
+			}
+
 			@SuppressWarnings("unchecked")
 			java.util.Map<String, Object> requestData = JsonUtil.fromJson(content, java.util.Map.class);
 
 			String url = (String) requestData.get("url");
-			String path = (String) requestData.get("path");
 			String fileName = (String) requestData.get("fileName");
+			String folderName = (String) requestData.get("folderName");
 
 			if (url == null || url.trim().isEmpty()) {
 				LlamaServer.sendErrorResponse(ctx, HttpResponseStatus.BAD_REQUEST, "URL不能为空");
 				return;
 			}
 
-			if (path == null || path.trim().isEmpty()) {
-				LlamaServer.sendErrorResponse(ctx, HttpResponseStatus.BAD_REQUEST, "保存路径不能为空");
-				return;
-			}
-			var result = createAndStartTask(url, path, fileName);
+			var result = createAndStartTask(url, LlamaServer.getDownloadDirectory(), fileName, folderName);
 			LlamaServer.sendJsonResponse(ctx, result);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -463,12 +494,34 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 			long pendingCount = tasks.stream().filter(t -> t.getStatus() == DownloadTaskStatus.PENDING).count();
 			long completedCount = tasks.stream().filter(t -> t.getStatus() == DownloadTaskStatus.COMPLETED).count();
 			long failedCount = tasks.stream().filter(t -> t.getStatus() == DownloadTaskStatus.FAILED).count();
+
+			// Aggregate stats from remote nodes
+			List<org.mark.llamacpp.server.LlamaHubNode> enabledNodes = NodeManager.getInstance().listEnabledNodes();
+			for (org.mark.llamacpp.server.LlamaHubNode node : enabledNodes) {
+				NodeManager.HttpResult remoteResult = NodeManager.getInstance()
+						.callRemoteApi(node.getNodeId(), "GET", "api/downloads/stats", null);
+				if (remoteResult.isSuccess() && remoteResult.getBody() != null) {
+					try {
+						com.google.gson.JsonObject root = com.google.gson.JsonParser.parseString(remoteResult.getBody()).getAsJsonObject();
+						com.google.gson.JsonObject remoteStats = root.getAsJsonObject("stats");
+						if (remoteStats != null) {
+							activeCount += getJsonLongSafe(remoteStats, "active");
+							pendingCount += getJsonLongSafe(remoteStats, "pending");
+							completedCount += getJsonLongSafe(remoteStats, "completed");
+							failedCount += getJsonLongSafe(remoteStats, "failed");
+						}
+					} catch (Exception e) {
+						// skip malformed response
+					}
+				}
+			}
+
 			Map<String, Object> stats = new HashMap<>();
 			stats.put("active", activeCount);
 			stats.put("pending", pendingCount);
 			stats.put("completed", completedCount);
 			stats.put("failed", failedCount);
-			stats.put("total", tasks.size());
+			stats.put("total", activeCount + pendingCount + completedCount + failedCount);
 			Map<String, Object> result = new HashMap<>();
 			result.put("success", true);
 			result.put("stats", stats);
@@ -478,52 +531,15 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 		}
 	}
 
-	/**
-	 * 	处理获取下载路径请求
-	 * @param ctx
-	 */
-	private void handleGetDownloadPath(ChannelHandlerContext ctx) {
+	private long getJsonLongSafe(com.google.gson.JsonObject obj, String key) {
 		try {
-			String downloadPath = LlamaServer.getDownloadDirectory();
-			java.util.Map<String, String> result = new java.util.HashMap<>();
-			result.put("path", downloadPath);
-			LlamaServer.sendJsonResponse(ctx, result);
-		} catch (Exception e) {
-			LlamaServer.sendErrorResponse(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, "获取下载路径失败: " + e.getMessage());
-		}
-	}
-
-	/**
-	 * 	处理设置下载路径请求
-	 * @param ctx
-	 * @param request
-	 */
-	private void handleSetDownloadPath(ChannelHandlerContext ctx, FullHttpRequest request) {
-		try {
-			String content = request.content().toString(CharsetUtil.UTF_8);
-			@SuppressWarnings("unchecked")
-			java.util.Map<String, Object> requestData = JsonUtil.fromJson(content, java.util.Map.class);
-
-			String path = (String) requestData.get("path");
-
-			if (path == null || path.trim().isEmpty()) {
-				LlamaServer.sendErrorResponse(ctx, HttpResponseStatus.BAD_REQUEST, "下载路径不能为空");
-				return;
+			if (obj.has(key) && !obj.get(key).isJsonNull()) {
+				return obj.get(key).getAsLong();
 			}
-
-			// 设置下载路径
-			LlamaServer.setDownloadDirectory(path);
-			
-			// 保存配置到文件
-			LlamaServer.saveApplicationConfig();
-
-			java.util.Map<String, String> result = new java.util.HashMap<>();
-			result.put("path", path);
-			result.put("message", "下载路径设置成功");
-			LlamaServer.sendJsonResponse(ctx, result);
 		} catch (Exception e) {
-			LlamaServer.sendErrorResponse(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, "设置下载路径失败: " + e.getMessage());
+			// ignore
 		}
+		return 0;
 	}
 
 	private static DownloadTaskManager createTaskManager() {
@@ -534,10 +550,42 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 		}
 	}
 
-	private Map<String, Object> createAndStartTask(String url, String path, String fileName) {
+	private Map<String, Object> createAndStartTask(String url, String path, String fileName, String folderName) {
 		Map<String, Object> result = new HashMap<>();
 		try {
-			Path targetFile = resolveTargetFile(path, fileName, url);
+			String selectedName = trimToNull(fileName);
+			if (selectedName == null) {
+				selectedName = inferFileName(url);
+			}
+			if (selectedName == null || selectedName.isBlank()) {
+				throw new IllegalArgumentException("无法推断文件名");
+			}
+			selectedName = selectedName.replaceAll("[<>:\"/\\\\|?*]", "_").trim();
+			if (selectedName.isEmpty()) {
+				throw new IllegalArgumentException("文件名不合法");
+			}
+
+			// Determine target folder
+			String targetFolder = trimToNull(folderName);
+			if (targetFolder == null) {
+				// Auto-create folder from file name (without extension)
+				targetFolder = selectedName;
+				int dotIndex = selectedName.lastIndexOf('.');
+				if (dotIndex > 0) {
+					targetFolder = selectedName.substring(0, dotIndex);
+				}
+			} else {
+				targetFolder = targetFolder.replaceAll("[<>:\"/\\\\|?*]", "_").trim();
+			}
+			if (targetFolder.isEmpty()) {
+				throw new IllegalArgumentException("文件夹名不合法");
+			}
+
+			Path base = Paths.get(path);
+			Path targetDir = base.resolve(targetFolder);
+			Files.createDirectories(targetDir);
+
+			Path targetFile = targetDir.resolve(selectedName);
 			DownloadTaskInfo created = taskManager.createTask(url, targetFile, 8);
 			taskManager.startTask(created.getTaskId());
 			result.put("success", true);
@@ -548,25 +596,6 @@ public class FileDownloadRouterHandler extends SimpleChannelInboundHandler<FullH
 			result.put("error", "创建下载任务失败: " + e.getMessage());
 		}
 		return result;
-	}
-
-	private static Path resolveTargetFile(String path, String fileName, String url) {
-		Path base = Paths.get(path);
-		String selectedName = trimToNull(fileName);
-		if (selectedName == null) {
-			selectedName = inferFileName(url);
-		}
-		if (selectedName == null || selectedName.isBlank()) {
-			throw new IllegalArgumentException("无法推断文件名");
-		}
-		selectedName = selectedName.replaceAll("[<>:\"/\\\\|?*]", "_").trim();
-		if (selectedName.isEmpty()) {
-			throw new IllegalArgumentException("文件名不合法");
-		}
-		if (Files.exists(base) && !Files.isDirectory(base)) {
-			return base;
-		}
-		return base.resolve(selectedName);
 	}
 
 	private static String inferFileName(String url) {

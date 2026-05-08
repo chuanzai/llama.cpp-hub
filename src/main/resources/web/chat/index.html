@@ -586,7 +586,7 @@
         .replace(/'/g, '&#39;');
     }
 
-    const MATH_TOKEN_PREFIX = 'LLAMA_MATH_TOKEN_';
+    const MATH_TOKEN_PREFIX = 'LLAMAMATHTOKEN';
     let mathJaxLoading = false;
     let mathJaxLoadAttempt = 0;
     let mathTypesetTimer = 0;
@@ -676,7 +676,7 @@
     }
 
     function createMathToken(kind, formula, store) {
-      const token = MATH_TOKEN_PREFIX + store.length + '__';
+      const token = MATH_TOKEN_PREFIX + String(store.length) + 'END';
       store.push({
         token,
         kind,
@@ -4201,10 +4201,9 @@
           removeTypingIndicator();
           if (error.name === 'AbortError') {
             if (Number.isInteger(currentAssistantIndex)) {
-              updateLastAssistantMessage('生成已停止', '', requestModel, null, currentAssistantIndex);
               setAssistantResponseStreaming(currentAssistantIndex, false);
             }
-            updateStatus('error', '生成已停止', '已停止');
+            updateStatus('ready', '已停止', '已停止');
           } else {
           if (Number.isInteger(currentAssistantIndex)) {
             updateLastAssistantMessage('请求失败：' + (error.message || '未知错误'), '', requestModel, null, currentAssistantIndex);
@@ -4688,7 +4687,8 @@
             const option = document.createElement('option');
             option.value = id;
             const nodeId = typeof item?.nodeId === 'string' && item.nodeId !== 'local' ? item.nodeId : '';
-            option.textContent = nodeId ? '[' + nodeId + '] ' + id : id;
+            const nodeName = nodeId && typeof item?.nodeName === 'string' && item.nodeName ? item.nodeName : nodeId;
+            option.textContent = nodeId ? '[' + nodeName + '] ' + id : id;
             els.modelSelect.appendChild(option);
             if (nodeId) {
               modelNodeIdMap[id] = nodeId;

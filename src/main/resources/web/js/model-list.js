@@ -353,9 +353,6 @@ function renderModelsList(models) {
             emptyTitle = nodeName ? t('page.model.empty_node_title', '节点 [{name}] 没有模型').replace('{name}', nodeName) : t('page.model.empty_node_title', '节点没有模型');
             emptyText = t('page.model.empty_node_desc', '该远程节点上没有发现模型');
         } else if (nodeFilter === 'local') {
-            emptyTitle = t('page.model.empty_remote_title', '没有远程模型');
-            emptyText = t('page.model.empty_remote_desc', '当前没有配置远程节点');
-        } else if (nodeFilter === 'local') {
             emptyTitle = t('page.model.empty_title', '没有模型');
             emptyText = t('page.model.empty_local_desc', '本机没有发现模型');
             emptyBtn = `<button class="btn btn-primary" onclick="showModelPathSetting()">${t('page.model.empty_action', '去配置')}</button>`;
@@ -412,18 +409,13 @@ function renderModelsList(models) {
             actionButtons = `<button class="btn-icon danger" onclick="stopModel('${model.id}', '${nodeId}')" title="${t('page.model.action.cancel_loading', '取消加载')}"><i class="fas fa-stop"></i></button>`;
         } else if (model.isLoaded) {
             if (status === 'running') {
-                const isLocalModel = !nodeId || nodeId === 'local';
                 actionButtons = `
                             <button class="btn-icon primary" onclick="loadModel('${model.id}', '${model.name}', '', '${nodeId}')" title="${t('modal.model_action.title.load', '加载模型')}"><i class="fas fa-sliders-h"></i></button>
                             <button class="btn-icon" onclick="viewModelDetails('${model.id}', '${nodeId}')" title="${t('page.model.action.details', '详情')}"><i class="fas fa-info-circle"></i></button>
-                            ${isLocalModel ? `<button class="btn-icon disabled" disabled title="${t('page.model.action.benchmark', '性能测试')}"><i class="fas fa-rocket"></i></button>` : ''}
-                            <button class="btn-icon" onclick="openModelBenchmarkList(decodeURIComponent('${encodeURIComponent(model.id)}'), decodeURIComponent('${encodeURIComponent(displayName)}'))" title="${t('page.model.action.view_benchmark_results', '查看测试结果')}"><i class="fas fa-list"></i></button>
-
                         `;
             } else {
                 actionButtons = `
                             <button class="btn-icon primary" onclick="loadModel('${model.id}', '${model.name}', '', '${nodeId}')" title="${t('modal.model_action.title.load', '加载模型')}"><i class="fas fa-sliders-h"></i></button>
-                            <button class="btn-icon" onclick="openModelBenchmarkList(decodeURIComponent('${encodeURIComponent(model.id)}'), decodeURIComponent('${encodeURIComponent(displayName)}'))" title="${t('page.model.action.view_benchmark_results', '查看测试结果')}"><i class="fas fa-list"></i></button>
                         `;
             }
         } else {
@@ -431,8 +423,6 @@ function renderModelsList(models) {
             actionButtons = `
                         <button class="btn-icon primary" onclick="loadModel('${model.id}', '${model.name}', '', '${nodeId}')" title="${t('page.model.action.load', '加载')}"><i class="fas fa-play"></i></button>
                         <button class="btn-icon" onclick="viewModelDetails('${model.id}', '${nodeId}')" title="${t('page.model.action.details', '详情')}"><i class="fas fa-info-circle"></i></button>
-                        ${!isRemote ? `<button class="btn-icon" onclick="openModelBenchmarkDialog(decodeURIComponent('${encodeURIComponent(model.id)}'), decodeURIComponent('${encodeURIComponent(displayName)}'))" title="${t('page.model.action.benchmark', '性能测试')}"><i class="fas fa-rocket"></i></button>` : ''}
-                        <button class="btn-icon" onclick="openModelBenchmarkList(decodeURIComponent('${encodeURIComponent(model.id)}'), decodeURIComponent('${encodeURIComponent(displayName)}'))" title="${t('page.model.action.view_benchmark_results', '查看测试结果')}"><i class="fas fa-list"></i></button>
                     `;
         }
 
@@ -451,7 +441,6 @@ function renderModelsList(models) {
                                 ${displayName}
                                 ${model.supportsVision ? '<span class="vision-badge"><i class="fas fa-image"></i></span>' : ''}
                                 ${model.supportsAudio ? '<span class="audio-badge"><i class="fas fa-headphones"></i></span>' : ''}
-                                ${nodeBadge}
                             </div>
                         <div class="model-meta">
                                 <span><i class="fas fa-layer-group"></i> ${architecture}</span>
@@ -459,7 +448,8 @@ function renderModelsList(models) {
                                 <span><i class="fas fa-hdd"></i> ${formatFileSize(model.size)}</span>
                                 ${model.port ? `<span><i class="fas fa-network-wired"></i> ${model.port}</span>` : ''}
                             </div>
-							<span class="model-slots" id="slots-${encodeURIComponent(modelCompositeKey(model.id, model.nodeId))}" style="visibility:${Array.isArray(model.slots) && model.slots.length > 0 ? 'visible' : 'hidden'};">${renderSlotsSquaresInner(model.slots)}</span>
+							<span class="model-slots" id="slots-${encodeURIComponent(modelCompositeKey(model.id, model.nodeId))}" style="display:none;">${renderSlotsSquaresInner(model.slots)}</span>
+							${nodeBadge ? '<div class="model-node-badge-line">' + nodeBadge + '</div>' : ''}
                         </div>
                         <div class="model-status-badge ${statusClass}">
                             <i class="fas ${statusIcon}"></i> <span>${statusText}</span>

@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.mark.llamacpp.gguf.GGUFMetaData;
@@ -29,14 +30,12 @@ import org.mark.llamacpp.server.exception.RequestMethodException;
 import org.mark.llamacpp.server.service.BenchmarkService;
 import org.mark.llamacpp.server.service.ModelRequestTracker;
 import org.mark.llamacpp.server.struct.ApiResponse;
-import org.mark.llamacpp.server.struct.StopModelRequest;
 import org.mark.llamacpp.server.tools.ChatTemplateFileTool;
 import org.mark.llamacpp.server.tools.JsonUtil;
 import org.mark.llamacpp.server.tools.ParamTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -56,6 +55,11 @@ public class ModelActionController implements BaseController {
 	 * 	
 	 */
 	private BenchmarkService benchmarkService = new BenchmarkService();
+	
+	/**
+	 * 	远程节点 HTTP 连接追踪，用于客户端中断时断开远程请求。
+	 */
+	private ConcurrentHashMap<ChannelHandlerContext, HttpURLConnection> remoteConnections = new ConcurrentHashMap<>();
 	
 	
 	public ModelActionController() {
@@ -154,7 +158,7 @@ public class ModelActionController implements BaseController {
 				// 刷新单个远程节点
 				logger.info("[模型操作] 远程节点刷新模型: nodeId={}", nodeId);
 				NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
-						nodeId, "GET", "api/models/refresh", null);
+						nodeId, "GET", "api/models/refresh", null, 5000, 15000);
 				if (result.isSuccess()) {
 					NodeManager.writeHttpResultToChannel(ctx, result, "[模型操作刷新远程]");
 				} else {
@@ -169,18 +173,34 @@ public class ModelActionController implements BaseController {
 
 			// 同步刷新所有已启用的远程节点
 			List<LlamaHubNode> enabledNodes = NodeManager.getInstance().listEnabledNodes();
+			List<Map<String, Object>> nodeResults = new ArrayList<>();
 			for (LlamaHubNode node : enabledNodes) {
+				Map<String, Object> nodeResult = new HashMap<>();
+				nodeResult.put("nodeId", node.getNodeId());
+				nodeResult.put("nodeName", node.getName());
 				try {
-					NodeManager.getInstance().callRemoteApi(node.getNodeId(), "GET", "api/models/refresh", null);
-					logger.info("[模型操作] 已刷新远程节点: nodeId={}", node.getNodeId());
+					NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
+						node.getNodeId(), "GET", "api/models/refresh", null, 5000, 15000);
+					if (result.isSuccess()) {
+						nodeResult.put("success", true);
+						logger.info("[模型操作] 已刷新远程节点: nodeId={}", node.getNodeId());
+					} else {
+						nodeResult.put("success", false);
+						nodeResult.put("error", "HTTP " + result.getStatusCode());
+						logger.warn("[模型操作] 刷新远程节点失败: nodeId={}, code={}", node.getNodeId(), result.getStatusCode());
+					}
 				} catch (Exception e) {
+					nodeResult.put("success", false);
+					nodeResult.put("error", e.getMessage());
 					logger.warn("[模型操作] 刷新远程节点失败: nodeId={}, error={}", node.getNodeId(), e.getMessage());
 				}
+				nodeResults.add(nodeResult);
 			}
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("success", true);
 			response.put("refreshed", true);
+			response.put("nodes", nodeResults);
 			LlamaServer.sendJsonResponse(ctx, response);
 		} catch (Exception e) {
 			logger.info("强制刷新模型列表时发生错误", e);
@@ -740,6 +760,15 @@ public class ModelActionController implements BaseController {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("请求体解析失败"));
 				return;
 			}
+
+			String nodeId = JsonUtil.getJsonString(json, "nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				json.remove("nodeId");
+				NodeManager.HttpResult result = callRemoteApiTracked(ctx, nodeId, "POST", "api/models/benchmark", json);
+				writeRemoteResult(ctx, result);
+				return;
+			}
+
 			String modelId = json.has("modelId") ? json.get("modelId").getAsString() : null;
 			if (modelId == null || modelId.trim().isEmpty()) {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("缺少必需的modelId参数"));
@@ -906,12 +935,20 @@ public class ModelActionController implements BaseController {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("请求体解析失败"));
 				return;
 			}
+
+			String nodeId = JsonUtil.getJsonString(json, "nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				json.remove("nodeId");
+				NodeManager.HttpResult result = callRemoteApiTracked(ctx, nodeId, "POST", "api/v2/models/benchmark", json);
+				writeRemoteResult(ctx, result);
+				return;
+			}
+
 			Map<String, Object> data = this.benchmarkService.handleBenchmark(ctx, json);
 			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			LlamaServer.sendJsonResponse(ctx, ApiResponse.error(e.getMessage()));
 		} catch (Exception e) {
-			logger.info("执行模型基准测试V2时发生错误", e);
 			String msg = e.getMessage();
 			if (msg != null && msg.startsWith("执行模型基准测试失败")) {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error(msg));
@@ -935,9 +972,13 @@ public class ModelActionController implements BaseController {
 		
 		try {
 			String query = request.uri();
-			String modelId = null;
 			Map<String, String> params = ParamTool.getQueryParam(query);
-			modelId = params.get("modelId");
+			String nodeId = params.get("nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				this.proxyGetRemote(ctx, request, nodeId, "api/models/benchmark/list");
+				return;
+			}
+			String modelId = params.get("modelId");
 
 			if (modelId == null || modelId.trim().isEmpty()) {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("缺少必需的modelId参数"));
@@ -985,6 +1026,11 @@ public class ModelActionController implements BaseController {
 		try {
 			String query = request.uri();
 			Map<String, String> params = ParamTool.getQueryParam(query);
+			String nodeId = params.get("nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				this.proxyGetRemote(ctx, request, nodeId, "api/v2/models/benchmark/get");
+				return;
+			}
 			String modelId = params.get("modelId");
 			if (modelId != null) modelId = modelId.trim();
 			if (modelId == null || modelId.isEmpty()) {
@@ -1044,6 +1090,15 @@ public class ModelActionController implements BaseController {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("请求体解析失败"));
 				return;
 			}
+
+			String nodeId = JsonUtil.getJsonString(json, "nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				json.remove("nodeId");
+				NodeManager.HttpResult result = callRemoteApiTracked(ctx, nodeId, "POST", "api/v2/models/benchmark/delete", json);
+				writeRemoteResult(ctx, result);
+				return;
+			}
+
 			String modelId = JsonUtil.getJsonString(json, "modelId", null);
 			if (modelId != null) modelId = modelId.trim();
 			if (modelId == null || modelId.isEmpty()) {
@@ -1098,9 +1153,13 @@ public class ModelActionController implements BaseController {
 		
 		try {
 			String query = request.uri();
-			String fileName = null;
-			
 			Map<String, String> params = ParamTool.getQueryParam(query);
+			String nodeId = params.get("nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				this.proxyGetRemote(ctx, request, nodeId, "api/models/benchmark/get");
+				return;
+			}
+			String fileName = null;
 			
 			fileName = params.get("fileName");
 			if (fileName == null || fileName.trim().isEmpty()) {
@@ -1142,11 +1201,17 @@ public class ModelActionController implements BaseController {
 		
 		try {
 			String query = request.uri();
-			String fileName = null;
-			
 			Map<String, String> params = ParamTool.getQueryParam(query);
-			
-			fileName = params.get("fileName");
+			String nodeId = params.get("nodeId");
+			String fileName = params.get("fileName");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				JsonObject body = new JsonObject();
+				body.addProperty("fileName", fileName);
+				String remotePath = "api/models/benchmark/delete?fileName=" + java.net.URLEncoder.encode(fileName != null ? fileName : "", "UTF-8");
+				NodeManager.HttpResult result = callRemoteApiTracked(ctx, nodeId, "POST", remotePath, body);
+				writeRemoteResult(ctx, result);
+				return;
+			}
 			
 			if (fileName == null || fileName.trim().isEmpty()) {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("缺少必需的fileName参数"));
@@ -1330,6 +1395,59 @@ public class ModelActionController implements BaseController {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		HttpURLConnection remoteConn = this.remoteConnections.remove(ctx);
+		if (remoteConn != null) {
+			try { remoteConn.disconnect(); } catch (Exception ignore) {}
+		}
+	}
+	
+	/**
+	 * 	调用远程 API，同时追踪 HTTP 连接以便客户端中断时断开。
+	 */
+	private NodeManager.HttpResult callRemoteApiTracked(ChannelHandlerContext ctx, String nodeId, String method, String path, JsonObject body) {
+		NodeManager manager = NodeManager.getInstance();
+		LlamaHubNode node = manager.getNode(nodeId);
+		if (node == null || node.getBaseUrl() == null) {
+			return new NodeManager.HttpResult(404, "Node not found: " + nodeId);
+		}
+		HttpURLConnection connection = null;
+		try {
+			String targetUrl = node.getBaseUrl() + "/" + path.replaceFirst("^/", "");
+			URL url = URI.create(targetUrl).toURL();
+			connection = (HttpURLConnection) url.openConnection();
+			if (connection instanceof javax.net.ssl.HttpsURLConnection) {
+				NodeManager.trustAllCerts((javax.net.ssl.HttpsURLConnection) connection);
+			}
+			connection.setRequestMethod(method);
+			connection.setConnectTimeout(3600 * 7 * 24 * 1000);
+			connection.setReadTimeout(3600 * 7 * 24 * 1000);
+			if (node.getApiKey() != null && !node.getApiKey().isBlank()) {
+				connection.setRequestProperty("Authorization", "Bearer " + node.getApiKey());
+			}
+			if (ctx != null) {
+				this.remoteConnections.put(ctx, connection);
+			}
+			if (body != null && (method.equals("POST") || method.equals("PUT"))) {
+				connection.setDoOutput(true);
+				connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+				try (java.io.OutputStream os = connection.getOutputStream()) {
+					String jsonStr = JsonUtil.toJson(body);
+					os.write(jsonStr.getBytes(StandardCharsets.UTF_8));
+				}
+			}
+			int responseCode = connection.getResponseCode();
+			String responseBody = NodeManager.readStream(responseCode >= 200 && responseCode < 300 ? connection.getInputStream() : connection.getErrorStream());
+			return new NodeManager.HttpResult(responseCode, responseBody);
+		} catch (java.io.IOException e) {
+			logger.warn("远程API调用失败: nodeId={}, path={}, error={}", nodeId, path, e.getMessage());
+			return new NodeManager.HttpResult(502, "Connection failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.warn("远程API调用失败: nodeId={}, path={}, error={}", nodeId, path, e.getMessage());
+			return new NodeManager.HttpResult(502, "Connection failed: " + e.getMessage());
+		} finally {
+			if (ctx != null) this.remoteConnections.remove(ctx);
+			if (connection != null) connection.disconnect();
+		}
 	}
 	
 	/**
@@ -1413,5 +1531,49 @@ public class ModelActionController implements BaseController {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * 代理 GET 请求到远程节点（移除 nodeId 避免回环）
+	 */
+	private void proxyGetRemote(ChannelHandlerContext ctx, FullHttpRequest request, String nodeId, String path) {
+		if (nodeId == null || nodeId.isBlank() || "local".equals(nodeId)) {
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("无效的远程节点: " + nodeId));
+			return;
+		}
+		try {
+			String uri = request.uri();
+			int qIdx = uri.indexOf('?');
+			String fullPath;
+			if (qIdx >= 0) {
+				String query = uri.substring(qIdx + 1);
+				String[] pairs = query.split("&");
+				StringBuilder cleanQuery = new StringBuilder();
+				for (String pair : pairs) {
+					if (pair.startsWith("nodeId=")) continue;
+					if (cleanQuery.length() > 0) cleanQuery.append('&');
+					cleanQuery.append(pair);
+				}
+				fullPath = cleanQuery.length() > 0 ? path + "?" + cleanQuery.toString() : path;
+			} else {
+				fullPath = path;
+			}
+			NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(nodeId, "GET", fullPath, null);
+			writeRemoteResult(ctx, result);
+		} catch (Exception e) {
+			logger.warn("[模型操作] 远程代理 GET 失败: nodeId={}, path={}, error={}", nodeId, path, e.getMessage());
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("调用远程节点失败: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * 将远程 HTTP 结果写入 Netty channel
+	 */
+	private void writeRemoteResult(ChannelHandlerContext ctx, NodeManager.HttpResult result) {
+		if (result.isSuccess()) {
+			NodeManager.writeHttpResultToChannel(ctx, result, "[模型操作]");
+		} else {
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+		}
 	}
 }

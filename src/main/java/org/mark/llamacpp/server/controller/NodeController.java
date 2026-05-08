@@ -68,6 +68,10 @@ public class NodeController implements BaseController {
 
     private void handleNodeAddRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
         this.assertRequestMethod(request.method() != HttpMethod.POST, "只支持POST请求");
+        if (!LlamaServer.isMasterNode()) {
+            LlamaServer.sendJsonResponse(ctx, ApiResponse.error("当前节点不是 master 模式，无法管理远程节点"));
+            return;
+        }
         try {
             String content = request.content().toString(io.netty.util.CharsetUtil.UTF_8);
             JsonObject obj = JsonUtil.fromJson(content, JsonObject.class);
@@ -115,6 +119,7 @@ public class NodeController implements BaseController {
 
             boolean added = NodeManager.getInstance().addNode(node);
             if (added) {
+                NodeManager.getInstance().healthCheck(nodeId);
                 LlamaServer.sendJsonResponse(ctx, ApiResponse.success(node));
             } else {
                 LlamaServer.sendJsonResponse(ctx, ApiResponse.error("添加节点失败"));
@@ -127,6 +132,10 @@ public class NodeController implements BaseController {
 
     private void handleNodeRemoveRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
         this.assertRequestMethod(request.method() != HttpMethod.POST, "只支持POST请求");
+        if (!LlamaServer.isMasterNode()) {
+            LlamaServer.sendJsonResponse(ctx, ApiResponse.error("当前节点不是 master 模式，无法管理远程节点"));
+            return;
+        }
         try {
             String content = request.content().toString(io.netty.util.CharsetUtil.UTF_8);
             JsonObject obj = JsonUtil.fromJson(content, JsonObject.class);
@@ -155,6 +164,10 @@ public class NodeController implements BaseController {
 
     private void handleNodeUpdateRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
         this.assertRequestMethod(request.method() != HttpMethod.POST, "只支持POST请求");
+        if (!LlamaServer.isMasterNode()) {
+            LlamaServer.sendJsonResponse(ctx, ApiResponse.error("当前节点不是 master 模式，无法管理远程节点"));
+            return;
+        }
         try {
             String content = request.content().toString(io.netty.util.CharsetUtil.UTF_8);
             JsonObject obj = JsonUtil.fromJson(content, JsonObject.class);
@@ -195,6 +208,10 @@ public class NodeController implements BaseController {
 
     private void handleNodeTestRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
         this.assertRequestMethod(request.method() != HttpMethod.POST, "只支持POST请求");
+        if (!LlamaServer.isMasterNode()) {
+            LlamaServer.sendJsonResponse(ctx, ApiResponse.error("当前节点不是 master 模式，无法管理远程节点"));
+            return;
+        }
         try {
             String content = request.content().toString(io.netty.util.CharsetUtil.UTF_8);
             JsonObject obj = JsonUtil.fromJson(content, JsonObject.class);
@@ -215,24 +232,18 @@ public class NodeController implements BaseController {
             }
 
             long startTime = System.currentTimeMillis();
-            NodeManager.HttpResult result = NodeManager.getInstance().fetchRemoteVersion(nodeId);
+            NodeManager.getInstance().healthCheck(nodeId);
             long latency = System.currentTimeMillis() - startTime;
-            String version = "";
-            if (result.isSuccess()) {
-                JsonObject resp = JsonUtil.fromJson(result.getBody(), JsonObject.class);
-                if (resp != null && resp.has("data")) {
-                    JsonObject data = resp.getAsJsonObject("data");
-                    if (data != null && data.has("version")) {
-                        version = data.get("version").getAsString();
-                    }
-                }
-            }
+            LlamaHubNode node = NodeManager.getInstance().getNode(nodeId);
+            boolean connected = node != null && node.getStatus() == LlamaHubNode.NodeStatus.ONLINE;
+            String version = node != null && node.getMetadata() != null && node.getMetadata().get("version") != null
+                    ? String.valueOf(node.getMetadata().get("version")) : "";
 
             Map<String, Object> response = new HashMap<>();
-            response.put("connected", result.isSuccess());
+            response.put("connected", connected);
             response.put("version", version);
             response.put("latency", latency);
-            response.put("statusCode", result.getStatusCode());
+            response.put("statusCode", connected ? 200 : 502);
             LlamaServer.sendJsonResponse(ctx, ApiResponse.success(response));
         } catch (Exception e) {
             logger.error("测试节点连通性失败", e);
@@ -282,6 +293,7 @@ public class NodeController implements BaseController {
                     onlineCount++;
                 }
             }
+            result.put("isMaster", LlamaServer.isMasterNode());
             result.put("connectedNodes", nodes.size());
             result.put("onlineNodes", onlineCount);
 

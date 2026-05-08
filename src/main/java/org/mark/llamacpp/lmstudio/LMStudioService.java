@@ -26,7 +26,6 @@ import org.mark.llamacpp.server.exception.RequestMethodException;
 import org.mark.llamacpp.server.service.ModelSamplingService;
 import org.mark.llamacpp.server.service.OpenAIService;
 import org.mark.llamacpp.server.service.ChatTemplateKwargsService;
-import org.mark.llamacpp.server.service.LlamaRecordService;
 import org.mark.llamacpp.server.tools.JsonUtil;
 import org.mark.llamacpp.server.tools.ParamTool;
 import org.slf4j.Logger;
@@ -36,6 +35,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+
+import org.mark.llamacpp.server.struct.ActiveRequest.Phase;
+import org.mark.llamacpp.server.struct.Timing;
+import org.mark.llamacpp.server.service.ModelRequestTracker;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -404,7 +407,58 @@ public class LMStudioService {
 			}
 		}
 	}
-	
+
+	private void forwardRequestChatCompletionToLlamaCpp(
+			ChannelHandlerContext ctx,
+			FullHttpRequest request,
+			String modelName, int port,
+			boolean isStream, String requestBody) {
+		HttpMethod method = request.method();
+		Map<String, String> headers = copyHeaders(request);
+
+		int requestBodyLength = requestBody == null ? 0 : requestBody.length();
+		logger.info("转发请求到llama.cpp进程: {} 端口: {} 请求体长度: {}", method.name(), port, requestBodyLength);
+
+		worker.execute(() -> {
+			HttpURLConnection connection = null;
+			String requestId = null;
+			try {
+				requestId = ModelRequestTracker.getInstance().createRequest(modelName, "/v1/chat/completions");
+				String targetUrl = String.format("http://localhost:%d/v1/chat/completions", port);
+				logger.info("连接到llama.cpp进程: {}", targetUrl);
+				connection = openAndTrack(ctx, targetUrl);
+				configureAndSend(connection, method, headers, requestBody);
+
+				long t = System.currentTimeMillis();
+				int responseCode = connection.getResponseCode();
+				logger.info("llama.cpp进程响应码: {}，等待时间：{}", responseCode, System.currentTimeMillis() - t);
+				ModelRequestTracker.getInstance().updatePhase(requestId, Phase.GENERATION);
+
+				if (isStream) {
+					this.handleStreamResponse(ctx, connection, responseCode, modelName, requestId);
+				} else {
+					this.handleNonStreamResponse(ctx, connection, responseCode, modelName, requestId);
+				}
+			} catch (Exception e) {
+				logger.info("转发请求到llama.cpp进程时发生错误", e);
+				if (e.getMessage() != null && e.getMessage().contains("Connection reset by peer")) {
+
+				}
+				this.sendOpenAIErrorResponseWithCleanup(ctx, 500, null, e.getMessage(), null);
+			} catch (Throwable t) {
+				logger.error("虚拟线程异常已兜底: {}", t.getMessage(), t);
+			} finally {
+				if (requestId != null) ModelRequestTracker.getInstance().removeRequest(requestId);
+				if (connection != null) {
+					connection.disconnect();
+				}
+				synchronized (this.channelConnectionMap) {
+					this.channelConnectionMap.remove(ctx);
+				}
+			}
+		});
+	}
+
 	private void forwardRequestEmbeddingsToLlamaCpp(
 			ChannelHandlerContext ctx,
 			FullHttpRequest request,
@@ -420,7 +474,9 @@ public class LMStudioService {
 
 		worker.execute(() -> {
 			HttpURLConnection connection = null;
+			String requestId = null;
 			try {
+				requestId = ModelRequestTracker.getInstance().createRequest(loadedModelName, "/v1/embeddings");
 				String targetUrl = String.format("http://localhost:%d/v1/embeddings", port);
 				logger.info("连接到llama.cpp进程: {}", targetUrl);
 
@@ -429,140 +485,18 @@ public class LMStudioService {
 				long t = System.currentTimeMillis();
 				int responseCode = connection.getResponseCode();
 				logger.info("llama.cpp进程响应码: {}，等待时间：{}", responseCode, System.currentTimeMillis() - t);
-				this.handleEmbeddingsNonStreamResponse(ctx, connection, responseCode, requestedModelName, loadedModelName);
+				ModelRequestTracker.getInstance().updatePhase(requestId, Phase.GENERATION);
+				this.handleEmbeddingsNonStreamResponse(ctx, connection, responseCode, requestedModelName, loadedModelName, requestId);
 			} catch (Exception e) {
 				logger.info("转发嵌入请求到llama.cpp进程时发生错误", e);
 				this.sendOpenAIErrorResponseWithCleanup(ctx, 500, null, e.getMessage(), null);
+			} catch (Throwable t) {
+				logger.error("虚拟线程异常已兜底: {}", t.getMessage(), t);
 			} finally {
+				if (requestId != null) ModelRequestTracker.getInstance().removeRequest(requestId);
 				if (connection != null) {
 					connection.disconnect();
 				}
-				synchronized (this.channelConnectionMap) {
-					this.channelConnectionMap.remove(ctx);
-				}
-			}
-		});
-	}
-	
-	private void handleEmbeddingsNonStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String requestedModelName, String loadedModelName) throws IOException {
-		String responseBody = "";
-		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-			responseCode >= 200 && responseCode < 300 ? connection.getInputStream() : connection.getErrorStream(),
-			StandardCharsets.UTF_8
-		))) {
-			StringBuilder sb = new StringBuilder();
-			String line;
-			while ((line = br.readLine()) != null) {
-				sb.append(line);
-			}
-			responseBody = sb.toString();
-		}
-
-		if (!(responseCode >= 200 && responseCode < 300)) {
-			LlamaServer.sendExpressRawJsonResponse(ctx, HttpResponseStatus.valueOf(responseCode), responseBody.getBytes(StandardCharsets.UTF_8), false);
-			return;
-		}
-
-		JsonObject llama = null;
-		try {
-			llama = JsonUtil.fromJson(responseBody, JsonObject.class);
-		} catch (Exception e) {
-			logger.info("解析llama.cpp embeddings JSON失败", e);
-		}
-
-		if (llama == null) {
-			LlamaServer.sendExpressRawJsonResponse(ctx, HttpResponseStatus.OK, responseBody.getBytes(StandardCharsets.UTF_8), false);
-			return;
-		}
-
-		JsonObject resp = new JsonObject();
-		resp.addProperty("object", safeString(llama, "object") == null ? "list" : safeString(llama, "object"));
-		if (llama.has("data") && llama.get("data").isJsonArray()) {
-			resp.add("data", llama.getAsJsonArray("data"));
-		} else {
-			resp.add("data", new JsonArray());
-		}
-		resp.addProperty("model", toLmStudioEmbeddingModelName(requestedModelName, loadedModelName));
-
-		JsonObject usage = new JsonObject();
-		JsonObject llamaUsage = llama.has("usage") && llama.get("usage").isJsonObject() ? llama.getAsJsonObject("usage") : null;
-		int promptTokens = llamaUsage == null ? 0 : (safeInt(llamaUsage, "prompt_tokens") == null ? 0 : safeInt(llamaUsage, "prompt_tokens").intValue());
-		int totalTokens = llamaUsage == null ? 0 : (safeInt(llamaUsage, "total_tokens") == null ? 0 : safeInt(llamaUsage, "total_tokens").intValue());
-		usage.addProperty("prompt_tokens", promptTokens);
-		usage.addProperty("total_tokens", totalTokens);
-		resp.add("usage", usage);
-
-		this.sendOpenAIJsonResponseWithCleanup(ctx, resp, HttpResponseStatus.OK);
-	}
-	
-	private static String toLmStudioEmbeddingModelName(String requestedModelName, String loadedModelName) {
-		if (requestedModelName == null) {
-			return "";
-		}
-		String n = requestedModelName.trim();
-		if (n.isEmpty() || n.contains("@")) {
-			return n;
-		}
-		JsonObject info = buildModelInfo(loadedModelName == null ? n : loadedModelName.trim());
-		String quant = info == null ? null : safeString(info, "quant");
-		if (quant == null || quant.isBlank()) {
-			return n;
-		}
-		return n + "@" + quant.trim().toLowerCase(Locale.ROOT);
-	}
-	
-	/**
-	 * 转发请求到对应的llama.cpp进程
-	 */
-	private void forwardRequestChatCompletionToLlamaCpp(
-			ChannelHandlerContext ctx, 
-			FullHttpRequest request, 
-			String modelName, int port, 
-			boolean isStream, String 
-			requestBody) {
-		// 在异步执行前先读取请求体，避免ByteBuf引用计数问题
-		HttpMethod method = request.method();
-		// 复制请求头，避免在异步任务中访问已释放的请求对象
-		Map<String, String> headers = copyHeaders(request);
-
-		int requestBodyLength = requestBody == null ? 0 : requestBody.length();
-		logger.info("转发请求到llama.cpp进程: {} 端口: {} 请求体长度: {}", method.name(), port, requestBodyLength);
-		
-		worker.execute(() -> {
-			// 添加断开连接的事件监听
-			HttpURLConnection connection = null;
-			try {
-				// 构建目标URL
-				String targetUrl = String.format("http://localhost:%d/v1/chat/completions", port);
-				logger.info("连接到llama.cpp进程: {}", targetUrl);
-				connection = openAndTrack(ctx, targetUrl);
-				configureAndSend(connection, method, headers, requestBody);
-				
-				// 获取响应码
-				long t = System.currentTimeMillis();
-				int responseCode = connection.getResponseCode();
-				logger.info("llama.cpp进程响应码: {}，等待时间：{}", responseCode, System.currentTimeMillis() - t);
-				
-				if (isStream) {
-					// 处理流式响应
-					this.handleStreamResponse(ctx, connection, responseCode, modelName);
-				} else {
-					// 处理非流式响应
-					this.handleNonStreamResponse(ctx, connection, responseCode, modelName);
-				}
-			} catch (Exception e) {
-				logger.info("转发请求到llama.cpp进程时发生错误", e);
-				// 检查是否是客户端断开连接导致的异常
-				if (e.getMessage() != null && e.getMessage().contains("Connection reset by peer")) {
-					
-				}
-				this.sendOpenAIErrorResponseWithCleanup(ctx, 500, null, e.getMessage(), null);
-			} finally {
-				// 关闭连接
-				if (connection != null) {
-					connection.disconnect();
-				}
-				// 清理 
 				synchronized (this.channelConnectionMap) {
 					this.channelConnectionMap.remove(ctx);
 				}
@@ -583,7 +517,9 @@ public class LMStudioService {
 		
 		worker.execute(() -> {
 			HttpURLConnection connection = null;
+			String requestId = null;
 			try {
+				requestId = ModelRequestTracker.getInstance().createRequest(modelName, "/v1/completions");
 				String targetUrl = String.format("http://localhost:%d/v1/completions", port);
 				logger.info("连接到llama.cpp进程: {}", targetUrl);
 				connection = openAndTrack(ctx, targetUrl);
@@ -591,16 +527,20 @@ public class LMStudioService {
 				long t = System.currentTimeMillis();
 				int responseCode = connection.getResponseCode();
 				logger.info("llama.cpp进程响应码: {}，等待时间：{}", responseCode, System.currentTimeMillis() - t);
+				ModelRequestTracker.getInstance().updatePhase(requestId, Phase.GENERATION);
 				
 				if (isStream) {
-					this.handleTextCompletionStreamResponse(ctx, connection, responseCode, modelName);
+					this.handleTextCompletionStreamResponse(ctx, connection, responseCode, modelName, requestId);
 				} else {
-					this.handleTextCompletionNonStreamResponse(ctx, connection, responseCode, modelName);
+					this.handleTextCompletionNonStreamResponse(ctx, connection, responseCode, modelName, requestId);
 				}
 			} catch (Exception e) {
 				logger.info("转发文本补全请求到llama.cpp进程时发生错误", e);
 				this.sendOpenAIErrorResponseWithCleanup(ctx, 500, null, e.getMessage(), null);
+			} catch (Throwable t) {
+				logger.error("虚拟线程异常已兜底: {}", t.getMessage(), t);
 			} finally {
+				if (requestId != null) ModelRequestTracker.getInstance().removeRequest(requestId);
 				if (connection != null) {
 					connection.disconnect();
 				}
@@ -610,7 +550,7 @@ public class LMStudioService {
 			}
 		});
 	}
-	
+
 	/**
 	 * 	
 	 * @param ctx
@@ -618,7 +558,7 @@ public class LMStudioService {
 	 * @param responseCode
 	 * @param modelName
 	 */
-	private void handleNonStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String modelName) throws IOException {
+	private void handleNonStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String modelName, String requestId) throws IOException {
 		String responseBody = "";
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
 			responseCode >= 200 && responseCode < 300 ? connection.getInputStream() : connection.getErrorStream(),
@@ -630,7 +570,15 @@ public class LMStudioService {
 				sb.append(line);
 			}
 			responseBody = sb.toString();
-			LlamaRecordService.getInstance().handleStream(modelName, responseBody);
+			if (requestId != null) {
+				try {
+					JsonObject root = JsonUtil.fromJson(responseBody, JsonObject.class);
+					if (root != null && root.has("timings")) {
+						Timing timing = JsonUtil.fromJson(root.get("timings"), Timing.class);
+						ModelRequestTracker.getInstance().updateTiming(requestId, timing);
+					}
+				} catch (Exception ignore) {}
+			}
 		} catch (IOException e) {
 			//logger.info("读取llama.cpp非流式响应失败", e);
 			//this.sendOpenAIErrorResponseWithCleanup(ctx, 500, null, e.getMessage(), null);
@@ -679,7 +627,7 @@ public class LMStudioService {
 		this.sendOpenAIJsonResponseWithCleanup(ctx, completion, HttpResponseStatus.OK);
 	}
 	
-	private void handleTextCompletionNonStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String modelName) throws IOException {
+	private void handleTextCompletionNonStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String modelName, String requestId) throws IOException {
 		String responseBody = "";
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
 			responseCode >= 200 && responseCode < 300 ? connection.getInputStream() : connection.getErrorStream(),
@@ -741,7 +689,7 @@ public class LMStudioService {
 	 * @param modelName
 	 * @throws IOException
 	 */
-	private void handleStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String modelName) throws IOException {
+	private void handleStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String modelName, String requestId) throws IOException {
 		// 创建响应头
 		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(responseCode));
 		response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/event-stream; charset=UTF-8");
@@ -806,7 +754,10 @@ public class LMStudioService {
 						JsonObject extractedTimings = parsed.has("timings") && parsed.get("timings").isJsonObject() ? parsed.getAsJsonObject("timings") : null;
 						if (extractedTimings != null) {
 							timings = extractedTimings;
-							LlamaRecordService.getInstance().handleStream(modelName, data);
+							if (requestId != null) {
+								Timing timing = JsonUtil.fromJson(extractedTimings, Timing.class);
+								ModelRequestTracker.getInstance().updateTiming(requestId, timing);
+							}
 						}
 
 						JsonArray choices = parsed.has("choices") && parsed.get("choices").isJsonArray() ? parsed.getAsJsonArray("choices") : null;
@@ -904,7 +855,7 @@ public class LMStudioService {
 			
 			logger.info("流式响应处理完成，共发送 {} 个数据块", chunkCount);
 		} catch (Exception e) {
-			logger.info("处理流式响应时发生错误", e);
+			logger.info("处理流式响应时发生错误 [本机]", e);
 			// 检查是否是客户端断开连接导致的异常
 			if (e.getMessage() != null &&
 				(e.getMessage().contains("Connection reset by peer") ||
@@ -928,7 +879,7 @@ public class LMStudioService {
 		});
 	}
 	
-	private void handleTextCompletionStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String modelName) throws IOException {
+	private void handleTextCompletionStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String modelName, String requestId) throws IOException {
 		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(responseCode));
 		response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/event-stream; charset=UTF-8");
 		response.headers().set(HttpHeaderNames.CACHE_CONTROL, "no-cache");
@@ -983,7 +934,10 @@ public class LMStudioService {
 						JsonObject extractedTimings = parsed.has("timings") && parsed.get("timings").isJsonObject() ? parsed.getAsJsonObject("timings") : null;
 						if (extractedTimings != null) {
 							timings = extractedTimings;
-							LlamaRecordService.getInstance().handleStream(modelName, data);
+							if (requestId != null) {
+								Timing timing = JsonUtil.fromJson(extractedTimings, Timing.class);
+								ModelRequestTracker.getInstance().updateTiming(requestId, timing);
+							}
 						}
 						JsonObject extractedUsage = parsed.has("usage") && parsed.get("usage").isJsonObject() ? parsed.getAsJsonObject("usage") : null;
 						if (extractedUsage != null) {
@@ -1143,7 +1097,81 @@ public class LMStudioService {
 		}
 	}
 
-	/**	
+	private void handleEmbeddingsNonStreamResponse(ChannelHandlerContext ctx, HttpURLConnection connection, int responseCode, String requestedModelName, String loadedModelName, String requestId) throws IOException {
+		String responseBody = "";
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(
+			responseCode >= 200 && responseCode < 300 ? connection.getInputStream() : connection.getErrorStream(),
+			StandardCharsets.UTF_8
+		))) {
+			StringBuilder sb = new StringBuilder();
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line);
+			}
+			responseBody = sb.toString();
+		}
+
+		if (!(responseCode >= 200 && responseCode < 300)) {
+			LlamaServer.sendExpressRawJsonResponse(ctx, HttpResponseStatus.valueOf(responseCode), responseBody.getBytes(StandardCharsets.UTF_8), false);
+			return;
+		}
+
+		JsonObject llama = null;
+		try {
+			llama = JsonUtil.fromJson(responseBody, JsonObject.class);
+		} catch (Exception e) {
+			logger.info("解析llama.cpp embeddings JSON失败", e);
+		}
+
+		if (llama == null) {
+			LlamaServer.sendExpressRawJsonResponse(ctx, HttpResponseStatus.OK, responseBody.getBytes(StandardCharsets.UTF_8), false);
+			return;
+		}
+
+		if (requestId != null && llama.has("timings")) {
+			try {
+				Timing timing = JsonUtil.fromJson(llama.get("timings"), Timing.class);
+				ModelRequestTracker.getInstance().updateTiming(requestId, timing);
+			} catch (Exception ignore) {}
+		}
+
+		JsonObject resp = new JsonObject();
+		resp.addProperty("object", safeString(llama, "object") == null ? "list" : safeString(llama, "object"));
+		if (llama.has("data") && llama.get("data").isJsonArray()) {
+			resp.add("data", llama.getAsJsonArray("data"));
+		} else {
+			resp.add("data", new JsonArray());
+		}
+		resp.addProperty("model", toLmStudioEmbeddingModelName(requestedModelName, loadedModelName));
+
+		JsonObject usage = new JsonObject();
+		JsonObject llamaUsage = llama.has("usage") && llama.get("usage").isJsonObject() ? llama.getAsJsonObject("usage") : null;
+		int promptTokens = llamaUsage == null ? 0 : (safeInt(llamaUsage, "prompt_tokens") == null ? 0 : safeInt(llamaUsage, "prompt_tokens").intValue());
+		int totalTokens = llamaUsage == null ? 0 : (safeInt(llamaUsage, "total_tokens") == null ? 0 : safeInt(llamaUsage, "total_tokens").intValue());
+		usage.addProperty("prompt_tokens", promptTokens);
+		usage.addProperty("total_tokens", totalTokens);
+		resp.add("usage", usage);
+
+		this.sendOpenAIJsonResponseWithCleanup(ctx, resp, HttpResponseStatus.OK);
+	}
+
+	private static String toLmStudioEmbeddingModelName(String requestedModelName, String loadedModelName) {
+		if (requestedModelName == null) {
+			return "";
+		}
+		String n = requestedModelName.trim();
+		if (n.isEmpty() || n.contains("@")) {
+			return n;
+		}
+		JsonObject info = buildModelInfo(loadedModelName == null ? n : loadedModelName.trim());
+		String quant = info == null ? null : safeString(info, "quant");
+		if (quant == null || quant.isBlank()) {
+			return n;
+		}
+		return n + "@" + quant.trim().toLowerCase(Locale.ROOT);
+	}
+
+	/**
 	 * 	
 	 * @param obj
 	 * @param key

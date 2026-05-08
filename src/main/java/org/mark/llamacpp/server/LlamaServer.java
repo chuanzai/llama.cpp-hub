@@ -19,12 +19,11 @@ import javax.net.ssl.SSLEngine;
 
 import org.mark.llamacpp.lmstudio.LMStudio;
 import org.mark.llamacpp.ollama.Ollama;
-import org.mark.llamacpp.server.channel.AnthropicRouterHandler;
 import org.mark.llamacpp.server.channel.BasicRouterHandler;
 import org.mark.llamacpp.server.channel.CompletionRouterHandler;
 import org.mark.llamacpp.server.channel.FileDownloadRouterHandler;
 import org.mark.llamacpp.server.channel.OpenAIChatStreamingHandler;
-import org.mark.llamacpp.server.channel.OpenAIRouterHandler;
+import org.mark.llamacpp.server.channel.LlamaRouterHandler;
 import org.mark.llamacpp.server.io.ConsoleBroadcastOutputStream;
 import org.mark.llamacpp.server.io.ConsoleBufferLogAppender;
 import org.mark.llamacpp.server.mcp.McpClientService;
@@ -142,11 +141,6 @@ public class LlamaServer {
 			LlamaServer.bindOpenAI(webPort);
 		});
 		t1.start();
-
-		Thread t2 = new Thread(() -> {
-			LlamaServer.bindAnthropic(anthropicPort);
-		});
-		t2.start();
 		
 		if (lmstudioCompatEnabled) {
 			try {
@@ -1025,70 +1019,70 @@ public static String getDefaultModelsPath() {
       }
     
     
-    private static void bindAnthropic(int port) {
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
-        
-        try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
-            bootstrap.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .option(ChannelOption.SO_BACKLOG, 1024)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel ch) throws Exception {
-                            if (httpsSslContext != null) {
-                            	SSLEngine engine = httpsSslContext.newEngine(ch.alloc());
-                                ch.pipeline()
-                                		.addLast(new SslHandler(engine))
-                                        .addLast(new HttpServerCodec())
-                                        .addLast(new HttpObjectAggregator(MAX_HTTP_CONTENT_LENGTH))
-                                        .addLast(new ChunkedWriteHandler())
-                                        .addLast(new BasicRouterHandler())
-                                        .addLast(new CompletionRouterHandler())
-                                        .addLast(new AnthropicRouterHandler())
-                                        .addLast(new FileDownloadRouterHandler());
-                            } else {
-                                ch.pipeline()
-                                        .addLast(new HttpServerCodec())
-                                        .addLast(new HttpObjectAggregator(MAX_HTTP_CONTENT_LENGTH))
-                                        .addLast(new ChunkedWriteHandler())
-                                        .addLast(new BasicRouterHandler())
-                                        .addLast(new CompletionRouterHandler())
-                                        .addLast(new AnthropicRouterHandler())
-                                        .addLast(new FileDownloadRouterHandler());
-                            }
-                        }
-                        
-                        @Override
-                        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-                        		logger.info("Failed to initialize a channel. Closing: " + ctx.channel(), cause);
-                            ctx.close();
-                        }
-                    });
-            
-            ChannelFuture future = bootstrap.bind(port).sync();
-            logger.info("Anthropic服务启动成功，端口: {}", port);
-            String protocol = httpsSslContext != null ? "https" : "http";
-            logger.info("访问地址: {}://localhost:{}", protocol, port);
-            
-            future.channel().closeFuture().sync();
-        } catch (InterruptedException e) {
-            logger.info("服务器被中断", e);
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            logger.info("服务器启动失败", e);
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
-            
-            logger.info("服务器已关闭");
-        }
-    }
+//    private static void bindAnthropic(int port) {
+//        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+//        EventLoopGroup workerGroup = new NioEventLoopGroup();
+//        
+//        try {
+//            ServerBootstrap bootstrap = new ServerBootstrap();
+//            bootstrap.group(bossGroup, workerGroup)
+//                    .channel(NioServerSocketChannel.class)
+//                    .option(ChannelOption.SO_BACKLOG, 1024)
+//                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+//                    .childHandler(new ChannelInitializer<SocketChannel>() {
+//                        @Override
+//                        protected void initChannel(SocketChannel ch) throws Exception {
+//                            if (httpsSslContext != null) {
+//                            	SSLEngine engine = httpsSslContext.newEngine(ch.alloc());
+//                                ch.pipeline()
+//                                		.addLast(new SslHandler(engine))
+//                                        .addLast(new HttpServerCodec())
+//                                        .addLast(new HttpObjectAggregator(MAX_HTTP_CONTENT_LENGTH))
+//                                        .addLast(new ChunkedWriteHandler())
+//                                        .addLast(new BasicRouterHandler())
+//                                        .addLast(new CompletionRouterHandler())
+//                                        .addLast(new AnthropicRouterHandler())
+//                                        .addLast(new FileDownloadRouterHandler());
+//                            } else {
+//                                ch.pipeline()
+//                                        .addLast(new HttpServerCodec())
+//                                        .addLast(new HttpObjectAggregator(MAX_HTTP_CONTENT_LENGTH))
+//                                        .addLast(new ChunkedWriteHandler())
+//                                        .addLast(new BasicRouterHandler())
+//                                        .addLast(new CompletionRouterHandler())
+//                                        .addLast(new AnthropicRouterHandler())
+//                                        .addLast(new FileDownloadRouterHandler());
+//                            }
+//                        }
+//                        
+//                        @Override
+//                        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+//                        		logger.info("Failed to initialize a channel. Closing: " + ctx.channel(), cause);
+//                            ctx.close();
+//                        }
+//                    });
+//            
+//            ChannelFuture future = bootstrap.bind(port).sync();
+//            logger.info("Anthropic服务启动成功，端口: {}", port);
+//            String protocol = httpsSslContext != null ? "https" : "http";
+//            logger.info("访问地址: {}://localhost:{}", protocol, port);
+//            
+//            future.channel().closeFuture().sync();
+//        } catch (InterruptedException e) {
+//            logger.info("服务器被中断", e);
+//            Thread.currentThread().interrupt();
+//        } catch (Exception e) {
+//            logger.info("服务器启动失败", e);
+//        } finally {
+//            bossGroup.shutdownGracefully();
+//            workerGroup.shutdownGracefully();
+//            
+//            logger.info("服务器已关闭");
+//        }
+//    }
     
     
-private static void bindOpenAI(int port) {
+    private static void bindOpenAI(int port) {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         
@@ -1115,7 +1109,7 @@ private static void bindOpenAI(int port) {
                                         .addLast(new BasicRouterHandler())
                                         .addLast(new CompletionRouterHandler())
                                         .addLast(new FileDownloadRouterHandler())
-                                        .addLast(new OpenAIRouterHandler());
+                                        .addLast(new LlamaRouterHandler());
                             } else {
                                 ch.pipeline()
                                         .addLast(new HttpServerCodec())
@@ -1128,7 +1122,7 @@ private static void bindOpenAI(int port) {
                                         .addLast(new BasicRouterHandler())
                                         .addLast(new CompletionRouterHandler())
                                         .addLast(new FileDownloadRouterHandler())
-                                        .addLast(new OpenAIRouterHandler());
+                                        .addLast(new LlamaRouterHandler());
                             }
                         }
                         @Override

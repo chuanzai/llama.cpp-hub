@@ -627,13 +627,6 @@
             <div class="modal-body" style="display:flex; flex-direction:column; padding: 0; overflow:hidden; min-height:0;">
                 <div style="display:flex; flex-wrap: wrap; align-items:center; gap: 0.75rem; padding: 0.75rem; border-bottom: 1px solid var(--border-color); background: #f8f9fa;">
                     <button class="btn btn-secondary btn-sm" id="refreshConsoleBtn"><i class="fas fa-sync-alt"></i> 刷新</button>
-                    <label style="display:inline-flex; align-items:center; gap:6px; font-size: 0.9rem;">
-                        <input type="checkbox" id="autoRefreshConsole"> 自动刷新
-                    </label>
-                    <label style="display:inline-flex; align-items:center; gap:6px; font-size: 0.9rem;">
-                        间隔(ms)
-                        <input class="form-control" type="number" id="intervalConsoleInput" value="2000" min="500" style="width:100px; padding: 4px 8px;">
-                    </label>
                     <div id="consoleStatusText" style="font-size: 0.85rem; color: var(--text-secondary); margin-left:auto;"></div>
                 </div>
                 <div id="logContainer" style="flex:1; min-height:0; overflow:auto; padding: 0.75rem; background: #0b1220;">
@@ -769,7 +762,6 @@
     <script src="js/model-detail.js"></script>
     <script src="js/model-list.js"></script>
     <script src="js/model-action-modal.js"></script>
-    <script src="js/model-benchmark.js"></script>
     <script src="js/index-mobile-nav.js"></script>
     <script src="js/hf-mobile.js"></script>
     <script src="js/download-mobile.js"></script>
@@ -781,6 +773,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             initWebSocket();
+            fetchRemoteNodes();
             let didInit = false;
             function initOnce() {
                 if (didInit) return;
@@ -1177,6 +1170,13 @@
             input.addEventListener('input', (e) => filterModels(e.target.value));
         }
 
+        function escapeHtmlCompat(str) {
+            return String(str).replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); });
+        }
+        function escapeAttrCompat(str) {
+            return escapeHtmlCompat(str).replace(/`/g, '&#96;');
+        }
+
         function filterModels(k) {
             k = (k || '').toLowerCase();
             document.querySelectorAll('.model-item').forEach(el => {
@@ -1255,7 +1255,8 @@
                          	</div>	                        
                         </div>
                         <div class="model-details">
-                            <div class="model-name" title="${model.name}">${displayName}${model.supportsVision ? '<span class="vision-badge"><i class="fas fa-image"></i></span>' : ''}${model.supportsAudio ? '<span class="audio-badge"><i class="fas fa-headphones"></i></span>' : ''}${nodeBadge}</div>
+                            <div class="model-name" title="${model.name}">${displayName}${model.supportsVision ? '<span class="vision-badge"><i class="fas fa-image"></i></span>' : ''}${model.supportsAudio ? '<span class="audio-badge"><i class="fas fa-headphones"></i></span>' : ''}</div>
+                            ${nodeBadge ? '<div class="model-node-badge-line">' + nodeBadge + '</div>' : ''}
                             <div class="model-mobile-actions">
                                 <div class="model-status-badge ${statusClass}">
                                     <i class="fas ${statusIcon}"></i> <span>${statusText}</span>
@@ -1312,8 +1313,6 @@
                 const actionList = [
                     { label: isFavourite ? '取消喜好' : '标记喜好', className: 'btn-secondary', enabled: true, action: () => toggleFavouriteModel(null, model.id, model.nodeId) },
                     { label: '加载模型', className: 'btn-primary', enabled: canLoad, action: () => loadModel(model.id, model.name, '', model.nodeId) },
-                    { label: '性能测试', className: 'btn-secondary', enabled: true, action: () => openModelBenchmarkDialog(decodeURIComponent(modelIdEsc), decodeURIComponent(displayNameEsc)) },
-                    { label: '测试结果', className: 'btn-secondary', enabled: true, action: () => openModelBenchmarkList(decodeURIComponent(modelIdEsc), decodeURIComponent(displayNameEsc)) },
                     { label: '模型详情', className: 'btn-secondary', enabled: true, action: () => viewModelDetails(model.id, model.nodeId) },
                     { label: '停止模型', className: 'btn-danger', enabled: canStop, action: () => stopModel(model.id, model.nodeId) }
                 ];

@@ -18,6 +18,210 @@
         .sidebar-quick-link-domain { font-size: 0.8rem; font-weight: 700; line-height: 1.1; word-break: break-all; }
         .sidebar-quick-link-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.2; }
         .sidebar-quick-link-ext { color: var(--text-secondary); opacity: 0.8; margin-top: 0.15rem; flex: 0 0 auto; }
+        /* === Console Tab Bar === */
+        .console-tab-bar { display:flex; gap:4px; margin:0 18px; background:var(--sidebar-bg); border:1px solid var(--border-color); border-radius:10px; padding:3px; flex-shrink:0; }
+        .console-tab-btn { flex:1; padding:7px 12px; border:none; border-radius:7px; background:transparent; color:#6b7280; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .console-tab-btn:hover { color:#4f46e5; background:rgba(99,102,241,0.06); }
+        .console-tab-btn.active { background:rgba(99,102,241,0.12); color:#4f46e5; font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+        .console-tab-container { flex:1 1 0; min-height:0; position:relative; margin:0 18px; }
+        .console-tab-panel { position:absolute; inset:0; overflow:hidden; display:none; }
+        .console-tab-panel.active { display:block; }
+        /* === Benchmark V3 Panel === */
+        #main-benchmark-v3 { display:flex; flex-direction:column; overflow:hidden; }
+        #main-benchmark-v3 .tab-bar { margin:0 18px; display:flex; gap:4px; background:var(--sidebar-bg); border:1px solid var(--border-color); border-radius:10px; padding:3px; flex-shrink:0; }
+        #main-benchmark-v3 .tab-bar button { flex:1; padding:8px 12px; border:none; border-radius:7px; background:transparent; color:#6b7280; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit; }
+        #main-benchmark-v3 .tab-bar button:hover { color:#4f46e5; background:rgba(99,102,241,0.06); }
+        #main-benchmark-v3 .tab-bar button.active { background:rgba(99,102,241,0.12); color:#4f46e5; font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+        #main-benchmark-v3 .tab-container { flex:1 1 0; min-height:0; position:relative; margin:0 18px; }
+        #main-benchmark-v3 .tab-panel { position:absolute; inset:0; overflow:hidden; display:none; }
+        #main-benchmark-v3 .tab-panel.active { display:grid; grid-template-columns:18% 1fr; grid-template-rows:1fr; gap:12px; }
+        #main-benchmark-v3 #serverPanel.active { grid-template-columns:18% auto 1fr; }
+        #main-benchmark-v3 .left-col { display:flex; flex-direction:column; gap:8px; min-height:0; overflow:hidden; padding:8px 0 0 0; }
+        #main-benchmark-v3 .mid-col { display:flex; flex-direction:column; gap:8px; min-height:0; overflow:hidden; padding:8px 0 0 0; }
+        #main-benchmark-v3 .mid-col .card { flex:1; }
+        #main-benchmark-v3 .right-col { display:flex; flex-direction:column; gap:8px; min-height:0; overflow:hidden; padding:8px 0 0 0; }
+        #main-benchmark-v3 .card { background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px; box-shadow:0 8px 20px rgba(0,0,0,0.06); min-height:0; }
+        #main-benchmark-v3 .card.stretch { flex:1 1 0; overflow:hidden; }
+        #main-benchmark-v3 .card.shrink { flex-shrink:0; }
+        #main-benchmark-v3 .row { display:flex; flex-direction:column; gap:4px; }
+        #main-benchmark-v3 .row label { font-size:11px; color:var(--text-secondary); font-weight:500; }
+        #main-benchmark-v3 .sub-text { font-size:11px; color:var(--text-secondary); }
+        #main-benchmark-v3 .bench-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; flex-shrink:0; }
+        #main-benchmark-v3 .model-list-header { display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-shrink:0; }
+        #main-benchmark-v3 .model-menu { display:flex; flex-direction:column; gap:4px; overflow:auto; flex:1 1 0; min-height:0; padding:2px 0; }
+        #main-benchmark-v3 .model-menu-item { width:100%; display:grid; grid-template-columns:1fr; gap:2px; border:1px solid var(--border-color); border-radius:8px; padding:7px 10px; background:rgba(255,255,255,0.02); color:var(--text-primary); cursor:pointer; text-align:left; font-family:inherit; font-size:12px; transition:all 0.15s; }
+        #main-benchmark-v3 .model-menu-item:hover { border-color:rgba(99,102,241,0.45); background:rgba(99,102,241,0.08); }
+        #main-benchmark-v3 .model-menu-item.active { border-color:rgba(99,102,241,0.75); background:rgba(99,102,241,0.14); }
+        #main-benchmark-v3 .model-menu-item.loaded:not(.active) { border-color:rgba(16,185,129,0.55); background:rgba(16,185,129,0.10); }
+        #main-benchmark-v3 .model-menu-item .name { font-weight:700; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        #main-benchmark-v3 .model-menu-item .meta { font-size:11px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        #main-benchmark-v3 .rec-card { flex:1 1 auto; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:8px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:12px; box-shadow:0 8px 20px rgba(0,0,0,0.06); }
+        #main-benchmark-v3 .rec-header { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-shrink:0; }
+        #main-benchmark-v3 .rec-header .left-group { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+        #main-benchmark-v3 .chart-wrap { flex-shrink:0; height:140px; border:1px solid var(--border-color); border-radius:8px; padding:6px; position:relative; background:var(--bg-color); }
+        #main-benchmark-v3 .chart-wrap canvas { width:100%; height:100%; display:block; }
+        #main-benchmark-v3 .chart-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-secondary); pointer-events:none; }
+        #main-benchmark-v3 .table-wrap { flex:1 1 auto; overflow:auto; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); min-height:0; }
+        #main-benchmark-v3 .result-table { width:100%; border-collapse:collapse; font-size:11px; }
+        #main-benchmark-v3 .result-table th,#main-benchmark-v3 .result-table td { border:1px solid var(--border-color); padding:5px 8px; text-align:left; white-space:nowrap; }
+        #main-benchmark-v3 .result-table th { background:var(--sidebar-bg); color:var(--text-secondary); font-weight:600; position:sticky; top:0; z-index:1; }
+        #main-benchmark-v3 .result-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.02); }
+        #main-benchmark-v3 .result-table tbody tr:hover { background:rgba(99,102,241,0.06); }
+        #main-benchmark-v3 .result-table .empty { text-align:center; color:var(--text-secondary); padding:24px; }
+        #main-benchmark-v3 .result-table .action-cell { width:60px; text-align:center; }
+        #main-benchmark-v3 .result-table tr.record-main td { border-top:2px solid rgba(99,102,241,0.65); }
+        #main-benchmark-v3 .result-table tr.record-detail td { white-space:normal; word-break:break-word; font-size:10px; border-top:0; padding:3px 8px 4px; color:var(--text-secondary); }
+        #main-benchmark-v3 .result-table tr.record-detail:last-child td { border-bottom:2px solid rgba(99,102,241,0.65); padding-bottom:6px; }
+        #main-benchmark-v3 .result-table tr.stats-row td { background:rgba(99,102,241,0.08); font-weight:700; border-top:2px solid rgba(99,102,241,0.4); font-size:10px; }
+        #main-benchmark-v3 .result-table .speed-fast { color:#10b981; font-weight:600; }
+        #main-benchmark-v3 .result-table .speed-mid { color:#f59e0b; font-weight:600; }
+        #main-benchmark-v3 .result-table .speed-slow { color:#ef4444; font-weight:600; }
+        #main-benchmark-v3 .pill { display:inline-block; padding:3px 10px; border:1px solid var(--border-color); border-radius:999px; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; max-width:360px; }
+        #main-benchmark-v3 .node-badge { display:inline-block; padding:1px 5px; border-radius:4px; font-size:10px; font-weight:500; vertical-align:middle; }
+        #main-benchmark-v3 .export-btns { display:flex; gap:3px; flex-shrink:0; }
+        #main-benchmark-v3 .export-btns button { padding:4px 10px; font-size:11px; border:1px solid var(--border-color); border-radius:5px; background:rgba(255,255,255,0.03); color:var(--text-secondary); cursor:pointer; font-family:inherit; transition:all 0.15s; }
+        #main-benchmark-v3 .export-btns button:hover { border-color:rgba(99,102,241,0.4); color:var(--text-primary); }
+        #main-benchmark-v3 .record-action-btn { padding:2px 8px; font-size:11px; line-height:1.4; border:1px solid var(--border-color); border-radius:4px; background:rgba(255,255,255,0.03); color:var(--text-secondary); cursor:pointer; font-family:inherit; transition:all 0.15s; }
+        #main-benchmark-v3 .record-action-btn:hover { border-color:var(--danger-color); color:var(--danger-color); background:rgba(239,68,68,0.08); }
+        #main-benchmark-v3 .bench-result-body { flex:1 1 0; min-height:0; display:grid; grid-template-columns:260px 1fr; gap:8px; overflow:hidden; }
+        #main-benchmark-v3 .history-col { display:flex; flex-direction:column; gap:4px; min-height:0; overflow:hidden; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); }
+        #main-benchmark-v3 .history-header { display:flex; align-items:center; justify-content:space-between; padding:6px 8px; font-size:11px; color:var(--text-secondary); border-bottom:1px solid var(--border-color); flex-shrink:0; }
+        #main-benchmark-v3 .history-list { flex:1 1 0; overflow:auto; min-height:0; display:flex; flex-direction:column; }
+        #main-benchmark-v3 .history-item { width:100%; border:none; border-bottom:1px solid var(--border-color); padding:6px 8px; background:transparent; color:var(--text-primary); text-align:left; cursor:pointer; font-family:inherit; font-size:11px; line-height:1.4; display:flex; justify-content:space-between; align-items:center; gap:4px; transition:background 0.1s; flex-shrink:0; }
+        #main-benchmark-v3 .history-item:hover { background:rgba(99,102,241,0.06); }
+        #main-benchmark-v3 .history-item.active { background:rgba(99,102,241,0.12); border-left:3px solid var(--primary-color); }
+        #main-benchmark-v3 .history-item .info { overflow:hidden; min-width:0; }
+        #main-benchmark-v3 .history-item .info .ts { font-weight:600; font-size:10px; color:var(--text-secondary); white-space:nowrap; }
+        #main-benchmark-v3 .history-item .info .cmd { font-size:10px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        #main-benchmark-v3 .history-item .del-btn { flex-shrink:0; padding:0 4px; font-size:10px; border:none; border-radius:3px; background:transparent; color:var(--text-secondary); cursor:pointer; opacity:0; transition:opacity 0.15s,color 0.15s; }
+        #main-benchmark-v3 .history-item:hover .del-btn { opacity:1; }
+        #main-benchmark-v3 .history-item .del-btn:hover { color:var(--danger-color); background:rgba(239,68,68,0.1); }
+        #main-benchmark-v3 .history-empty { padding:12px 8px; font-size:11px; color:var(--text-secondary); text-align:center; }
+        #main-benchmark-v3 .output-col { display:flex; flex-direction:column; gap:4px; min-height:0; overflow:hidden; }
+        #main-benchmark-v3 .output-meta { font-size:10px; color:var(--text-secondary); flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        #main-benchmark-v3 .param-groups { display:flex; flex-direction:column; gap:6px; }
+        #main-benchmark-v3 .param-group { border:1px solid var(--border-color); border-radius:8px; background:var(--card-bg); }
+        #main-benchmark-v3 .param-group[open] { border-color:rgba(99,102,241,0.3); }
+        #main-benchmark-v3 .param-group-summary { display:flex; align-items:center; gap:8px; padding:7px 10px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text-primary); user-select:none; list-style:none; border-radius:7px; }
+        #main-benchmark-v3 .param-group-summary::-webkit-details-marker { display:none; }
+        #main-benchmark-v3 .param-group-summary::before { content:'▸'; font-size:11px; color:var(--text-secondary); transition:transform 0.2s; flex-shrink:0; }
+        #main-benchmark-v3 .param-group[open] > .param-group-summary::before { transform:rotate(90deg); }
+        #main-benchmark-v3 .param-group-summary:hover { background:rgba(99,102,241,0.06); }
+        #main-benchmark-v3 .param-group-title { flex:1; }
+        #main-benchmark-v3 .param-group-count { font-size:11px; font-weight:500; color:var(--text-secondary); background:rgba(255,255,255,0.06); border:1px solid var(--border-color); border-radius:999px; padding:1px 7px; flex-shrink:0; }
+        #main-benchmark-v3 .param-group-body { padding:4px 8px 8px; }
+        #main-benchmark-v3 .param-group-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+        #main-benchmark-v3 .param-enable-toggle { margin:0; width:14px; height:14px; flex:0 0 auto; transform:translateY(1px); }
+        /* BModal */
+        #benchParamsModal { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; }
+        #benchParamsModal .bench-modal-dialog { background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; width:min(90vw,1024px); height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.35); }
+        #benchParamsModal .bench-modal-header { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border-color); flex-shrink:0; }
+        #benchParamsModal .bench-modal-body { flex:1 1 0; overflow-y:auto; padding:14px 18px; min-height:0; }
+        #benchParamsModal .bench-modal-footer { display:flex; justify-content:flex-end; padding:12px 18px; border-top:1px solid var(--border-color); flex-shrink:0; }
+        #benchParamsModal .device-placeholder { font-size:0.85rem; color:var(--text-secondary); padding:8px; text-align:center; }
+        #benchParamsModal #benchParamsDeviceList label { display:flex; align-items:flex-start; gap:8px; padding:6px; border-radius:8px; cursor:pointer; }
+        #benchParamsModal #benchParamsDeviceList label:hover { background:rgba(255,255,255,0.04); }
+        #benchParamsModal #benchParamsDeviceList .device-label-text { font-size:0.8rem; color:var(--text-primary); line-height:1.3; word-break:break-word; }
+        .bench-modal-dialog .param-group-summary { font-size:13px; }
+        .bench-modal-dialog .form-control { font-size:13px; }
+        .bench-modal-dialog .sub-text { font-size:12px; }
+        .bench-modal-dialog .param-group-count { font-size:11px; }
+        .bench-modal-dialog .record-action-btn { font-size:12px; }
+        .bench-modal-dialog .param-group-summary::before { font-size:11px; }
+        .bench-modal-dialog .form-label { font-size:14px; }
+        #benchParamsModal .param-groups { display:flex; flex-direction:column; gap:6px; }
+        #benchParamsModal .param-group { border:1px solid var(--border-color); border-radius:8px; background:var(--card-bg); }
+        #benchParamsModal .param-group[open] { border-color:rgba(99,102,241,0.3); }
+        #benchParamsModal .param-group-summary { display:flex; align-items:center; gap:8px; padding:7px 10px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text-primary); user-select:none; list-style:none; border-radius:7px; }
+        #benchParamsModal .param-group-summary::-webkit-details-marker { display:none; }
+        #benchParamsModal .param-group-summary::before { content:'▸'; font-size:11px; color:var(--text-secondary); transition:transform 0.2s; flex-shrink:0; }
+        #benchParamsModal .param-group[open] > .param-group-summary::before { transform:rotate(90deg); }
+        #benchParamsModal .param-group-summary:hover { background:rgba(99,102,241,0.06); }
+        #benchParamsModal .param-group-title { flex:1; }
+        #benchParamsModal .param-group-count { font-size:11px; font-weight:500; color:var(--text-secondary); background:rgba(255,255,255,0.06); border:1px solid var(--border-color); border-radius:999px; padding:1px 7px; flex-shrink:0; }
+        #benchParamsModal .param-group-body { padding:4px 8px 8px; }
+        #benchParamsModal .param-group-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+        #benchParamsModal .param-enable-toggle { margin:0; width:14px; height:14px; flex:0 0 auto; transform:translateY(1px); }
+        #benchParamsModal .param-field:has(.param-enable-toggle:not(:checked)) .form-label,
+        #benchParamsModal .param-field:has(.param-enable-toggle:not(:checked)) .form-text { color:#9ca3af; }
+        #benchParamsModal .param-field:has(.param-enable-toggle:not(:checked)) .form-control { background:#f3f4f6; border-color:#e5e7eb; color:#9ca3af; }
+        @media (max-width:960px) {
+          #main-benchmark-v3 .tab-panel.active { grid-template-columns:1fr; }
+        }
+        #main-benchmark-v3 .warn-banner { margin:0 18px 6px; padding:8px 12px; background:rgba(245,158,11,0.10); border:1px solid rgba(245,158,11,0.30); border-radius:8px; font-size:12px; flex-shrink:0; display:flex; align-items:flex-start; gap:8px; }
+        #main-benchmark-v3 .warn-banner i { color:#f59e0b; margin-top:1px; flex-shrink:0; }
+
+        #main-usage-report { display:flex; flex-direction:column; overflow:hidden; }
+        #main-usage-report .top-bar { flex-shrink:0; }
+        #main-usage-report .content-scrollable { flex:1; display:flex; flex-direction:column; padding:0 18px; }
+        #main-usage-report .tab-bar { margin:0 18px 12px; display:flex; gap:4px; background:var(--sidebar-bg); border:1px solid var(--border-color); border-radius:10px; padding:3px; flex-shrink:0; }
+        #main-usage-report .tab-bar button { flex:1; padding:8px 12px; border:none; border-radius:7px; background:transparent; color:#6b7280; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit; }
+        #main-usage-report .tab-bar button:hover { color:#4f46e5; background:rgba(99,102,241,0.06); }
+        #main-usage-report .tab-bar button.active { background:rgba(99,102,241,0.12); color:#4f46e5; font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+        #main-usage-report .tab-panel { display:none; flex:1; flex-direction:column; }
+        #main-usage-report .tab-panel.active { display:flex; }
+        #main-usage-report .report-card { background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:12px; margin:12px 0; box-shadow:0 8px 20px rgba(0,0,0,0.06); flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+        #main-usage-report .report-card-row { flex-direction:row; gap:12px; }
+        #main-usage-report .token-table-col { width:310px; flex-shrink:0; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+        #main-usage-report .token-scroll { flex:1; overflow:auto; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); padding:6px; }
+        #main-usage-report .token-chart-col { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        #main-usage-report .report-table { width:100%; border-collapse:collapse; font-size:13px; }
+        #main-usage-report .report-table th,#main-usage-report .report-table td { border:1px solid var(--border-color); padding:6px 10px; text-align:left; white-space:nowrap; }
+        #main-usage-report .report-table th { background:var(--sidebar-bg); color:var(--text-secondary); font-weight:600; position:sticky; top:0; z-index:1; }
+        #main-usage-report .report-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.02); }
+        #main-usage-report .report-table tbody tr:hover { background:rgba(99,102,241,0.06); }
+        #main-usage-report .report-table .empty { text-align:center; color:var(--text-secondary); padding:24px; }
+        #main-usage-report .table-wrap { flex:1; overflow:auto; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); }
+        #main-usage-report .token-card { background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; padding:8px 10px; margin-bottom:6px; }
+        #main-usage-report .token-card:last-child { margin-bottom:0; }
+        #main-usage-report .token-card .tk-model { font-weight:600; font-size:13px; margin-bottom:4px; color:var(--text-primary); }
+        #main-usage-report .token-card .tk-tokens { font-size:12px; color:var(--text-secondary); }
+        #main-usage-report .token-card .tk-tokens span { margin-right:12px; }
+        #main-usage-report .token-card .tk-cache { color:var(--accent-color); }
+        #main-usage-report .token-scroll .empty { text-align:center; color:var(--text-secondary); padding:24px; font-size:13px; }
+        #main-usage-report .report-summary { display:flex; gap:12px; margin:0; flex-shrink:0; }
+        #main-usage-report .report-summary .stat-card { flex:1; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:12px 16px; box-shadow:0 8px 20px rgba(0,0,0,0.06); }
+        #main-usage-report .report-summary .stat-card .stat-value { font-size:24px; font-weight:700; color:var(--primary-color); }
+        #main-usage-report .report-summary .stat-card .stat-label { font-size:12px; color:var(--text-secondary); margin-top:4px; }
+        #main-usage-report .report-filter { display:flex; align-items:center; gap:8px; flex-shrink:0; margin:0; }
+        #main-usage-report .report-filter select { padding:4px 8px; border:1px solid var(--border-color); border-radius:6px; background:var(--card-bg); color:var(--text-primary); font-size:12px; font-family:inherit; }
+        #main-usage-report .report-pagination { display:flex; align-items:center; gap:8px; flex-shrink:0; padding:8px 0; font-size:12px; color:var(--text-secondary); }
+        #main-usage-report .report-pagination button { padding:4px 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--card-bg); color:var(--text-primary); cursor:pointer; font-family:inherit; font-size:12px; }
+        #main-usage-report .report-pagination button:hover { border-color:var(--primary-color); color:var(--primary-color); }
+        #main-usage-report .report-pagination button:disabled { opacity:0.4; cursor:default; }
+        #main-usage-report .chart-wrap { flex:1; position:relative; border:1px solid var(--border-color); border-radius:8px; padding:6px; background:var(--bg-color); overflow:hidden; min-height:200px; max-height:260px; }
+        #main-usage-report .chart-wrap canvas { width:100%; height:100%; display:block; }
+        #main-usage-report .chart-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--text-secondary); pointer-events:none; }
+        #main-usage-report .chart-marker-legend { flex-shrink:0; padding:6px 0 0; display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; line-height:1.6; }
+        #main-usage-report .chart-marker-legend .ml-item { color:var(--text-primary); white-space:nowrap; }
+        #main-usage-report .chart-marker-legend .ml-marker { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:3px; background:var(--primary-color); color:#fff; font-size:10px; font-weight:700; margin-right:4px; vertical-align:middle; }
+        @media (max-width:768px) {
+            #main-usage-report .report-summary { flex-direction:column; }
+            #main-usage-report .tab-bar { margin:0 12px; }
+            #main-usage-report .content-scrollable { padding:0 12px; }
+            #main-usage-report .report-card { margin:8px 0; }
+            #main-usage-report .report-summary { margin:0; }
+            #main-usage-report .report-filter { margin:0; }
+        }
+        /* HTTPS Setup Guide Markdown */
+        .https-setup-content { font-size:0.8rem; line-height:1.6; color:var(--text-primary); overflow-x:auto; }
+        .https-setup-content h1 { font-size:1.1rem; margin:0.75rem 0 0.5rem; padding-bottom:0.3rem; border-bottom:1px solid var(--border-color); }
+        .https-setup-content h2 { font-size:0.95rem; margin:0.65rem 0 0.4rem; padding-bottom:0.2rem; border-bottom:1px solid var(--border-color); }
+        .https-setup-content h3 { font-size:0.85rem; margin:0.55rem 0 0.35rem; }
+        .https-setup-content p { margin:0.35rem 0; }
+        .https-setup-content ul,.https-setup-content ol { margin:0.25rem 0; padding-left:1.25rem; }
+        .https-setup-content li { margin:0.15rem 0; }
+        .https-setup-content code { font-family:Consolas,'Courier New',monospace; font-size:0.75rem; background:rgba(99,102,241,0.1); padding:0.1rem 0.3rem; border-radius:3px; }
+        .https-setup-content pre { background:var(--sidebar-bg); border:1px solid var(--border-color); border-radius:6px; padding:0.6rem; overflow-x:auto; margin:0.4rem 0; }
+        .https-setup-content pre code { background:none; padding:0; border-radius:0; }
+        .https-setup-content table { border-collapse:collapse; width:100%; margin:0.4rem 0; font-size:0.75rem; }
+        .https-setup-content th,.https-setup-content td { border:1px solid var(--border-color); padding:0.3rem 0.5rem; text-align:left; }
+        .https-setup-content th { background:var(--sidebar-bg); font-weight:600; }
+        .https-setup-content hr { border:none; border-top:1px solid var(--border-color); margin:0.75rem 0; }
+        .https-setup-content blockquote { margin:0.35rem 0; padding:0.25rem 0.75rem; border-left:3px solid var(--accent-color); background:rgba(99,102,241,0.04); border-radius:0 4px 4px 0; }
+        .https-setup-content blockquote p { margin:0.15rem 0; }
+        .https-setup-content a { color:var(--accent-color); }
+        .https-setup-content strong { font-weight:600; }
     </style>
 </head>
 <body>
@@ -39,22 +243,22 @@
                 <i class="fas fa-comments"></i>
                 <span data-i18n="nav.chat">nav.chat</span>
             </a>
-            <a href="tools/benchmark-v2.html" class="nav-item" target="_blank" id="nav-benchmark-v2">
+            <a href="#" class="nav-item" id="nav-benchmark-v3" onclick="showBenchmarkV3(); return false;">
                 <i class="fas fa-gauge-high"></i>
-                <span data-i18n="nav.benchmark_v2">nav.benchmark_v2</span>
+                <span>性能测试</span>
             </a>
             <a href="#" class="nav-item" id="nav-download" onclick="showDownloadManager(); return false;">
                 <i class="fas fa-download"></i>
                 <span data-i18n="nav.download">nav.download</span>
             </a>
-            <a href="#" class="nav-item" id="nav-hf" onclick="showHuggingFace(); return false;">
-                <i class="fas fa-cloud"></i>
+            <a href="#" class="nav-item" id="nav-hf" onclick="showHuggingFace(); return false;" style="display: none">
+                <i class="fas fa-search"></i>
                 <span data-i18n="nav.hf">nav.hf</span>
             </a>
-            <a href="#" class="nav-item" id="nav-device-status" onclick="showDeviceStatus(); return false;">
+            <!-- <a href="#" class="nav-item" id="nav-device-status" onclick="showDeviceStatus(); return false;">
                 <i class="fas fa-memory"></i>
                 <span data-i18n="nav.device_status">nav.device_status</span>
-            </a>
+            </a> -->
             <a href="#" class="nav-item" id="nav-console" onclick="showConsolePage(); return false;">
                 <i class="fas fa-terminal"></i>
                 <span data-i18n="nav.console">nav.console</span>
@@ -66,6 +270,10 @@
             <a href="#" class="nav-item" id="nav-model-path" onclick="showModelPathSetting(); return false;">
                 <i class="fas fa-folder-open"></i>
                 <span data-i18n="nav.model_path">nav.model_path</span>
+            </a>
+            <a href="#" class="nav-item" id="nav-usage-report" onclick="showUsageReport(); return false;">
+                <i class="fas fa-chart-simple"></i>
+                <span>用量报表</span>
             </a>
             <a href="#" class="nav-item" id="nav-settings" onclick="showSettingsPage(); return false;">
                 <i class="fas fa-cog"></i>
@@ -104,6 +312,14 @@
                     <span class="sidebar-quick-link-text">
                         <span class="sidebar-quick-link-domain">modelscope.com</span>
                         <span class="sidebar-quick-link-desc">ModelScope 模型库</span>
+                    </span>
+                    <i class="fas fa-external-link-alt sidebar-quick-link-ext"></i>
+                </a>
+                <a class="sidebar-quick-link" href="https://github.com/ggml-org/llama.cpp/releases" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github sidebar-quick-link-icon"></i>
+                    <span class="sidebar-quick-link-text">
+                        <span class="sidebar-quick-link-domain">llama.cpp Releases</span>
+                        <span class="sidebar-quick-link-desc">GitHub 发布页</span>
                     </span>
                     <i class="fas fa-external-link-alt sidebar-quick-link-ext"></i>
                 </a>
@@ -187,7 +403,7 @@
         <div class="top-bar">
             <h1 class="page-title" data-i18n="page.download.title">page.download.title</h1>
             <div class="top-actions">
-                <button class="btn btn-primary" onclick="DownloadManager.openCreateDownloadModal()" style="display: none">
+                <button class="btn btn-primary" onclick="DownloadManager.openCreateDownloadModal()">
                     <i class="fas fa-plus"></i>
                     <span data-i18n="page.download.create_task">page.download.create_task</span>
                 </button>
@@ -368,6 +584,9 @@
                     <button class="settings-tab" data-tab="startup">
                         <i class="fas fa-rocket"></i> <span data-i18n="page.settings.tab.startup">page.settings.tab.startup</span>
                     </button>
+                    <button class="settings-tab" data-tab="nodes">
+                        <i class="fas fa-network-wired"></i> <span data-i18n="page.settings.tab.nodes">节点</span>
+                    </button>
                 </div>
 
                 <div class="settings-content">
@@ -386,17 +605,6 @@
                                             <div class="settings-port-field">
                                                 <span class="settings-port-label" data-i18n="common.port">common.port</span>
                                                 <input class="form-control settings-port-input" type="number" id="webPortInput" min="1" max="65535" placeholder="8080">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="settings-toggle-row">
-                                        <div class="settings-toggle-title">
-                                            <i class="fas fa-globe"></i><span data-i18n="page.settings.server.anthropic_port">page.settings.server.anthropic_port</span>
-                                        </div>
-                                        <div class="settings-compat-actions">
-                                            <div class="settings-port-field">
-                                                <span class="settings-port-label" data-i18n="common.port">common.port</span>
-                                                <input class="form-control settings-port-input" type="number" id="anthropicPortInput" min="1" max="65535" placeholder="8070">
                                             </div>
                                         </div>
                                     </div>
@@ -513,7 +721,6 @@
                                      <label class="form-label" data-i18n="page.settings.https.title">page.settings.https.title</label>
                                      <small class="form-text" data-i18n="page.settings.https.desc">page.settings.https.desc</small>
                                  </div>
-                                 <div class="settings-hint" data-i18n="page.settings.https.hint">page.settings.https.hint</div>
                                 <div class="settings-toggle-list">
                                     <div class="settings-toggle-row">
                                         <div class="settings-toggle-title">
@@ -544,6 +751,11 @@
                                 <div class="settings-actions-row">
                                     <button class="btn btn-primary" id="saveHttpsBtn" data-i18n="common.save">common.save</button>
                                 </div>
+                                <hr style="margin:1rem 0;border-color:var(--border-color);">
+                                <div class="setup-guide-header" style="font-size:0.85rem;font-weight:600;color:var(--text-primary);margin-bottom:0.5rem;">
+                                    <i class="fas fa-book"></i> <span data-i18n="page.settings.https.setup_guide">page.settings.https.setup_guide</span>
+                                </div>
+                                <div id="httpsSetupDoc" class="https-setup-content"></div>
                             </div>
                         </div>
                     </div>
@@ -657,6 +869,27 @@
                         </div>
                     </div>
 
+                    <!-- Tab: 节点 -->
+                    <div class="settings-tab-panel" data-tab-panel="nodes">
+                        <div class="settings-panel">
+                            <div class="settings-panel-body">
+                                <div class="settings-hint" data-i18n="page.settings.nodes.hint">管理远程 llama.cpp-hub 节点，将多台机器聚合到统一入口。</div>
+                                <div id="nodeMasterBanner" class="alert alert-warning" style="display:none; margin-bottom:0.75rem; padding:0.5rem 0.75rem; font-size:0.8rem; border-radius:0.5rem; background:#fef3c7; border:1px solid #fbbf24; color:#92400e;">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span data-i18n="page.settings.nodes.not_master">当前节点未启用 master 模式，无法管理远程节点。请在 application.json 中设置 "nodeRole": "master"。</span>
+                                </div>
+                                <div id="nodeToolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                    <span style="font-size:0.8rem; font-weight:600;" data-i18n="page.settings.nodes.list_title">已配置节点</span>
+                                    <button class="btn btn-primary btn-sm" id="addNodeBtn" onclick="SettingsPage.openNodeForm()">
+                                        <i class="fas fa-plus"></i> <span data-i18n="common.add">添加</span>
+                                    </button>
+                                </div>
+                                <div class="settings-toggle-list" id="nodeList"></div>
+                                <div id="nodeEmptyState" class="empty-state" data-i18n="page.settings.nodes.empty">尚未配置远程节点</div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div><!-- /settings-content -->
             </div><!-- /settings-layout -->
         </div>
@@ -723,20 +956,143 @@
                 <button class="btn btn-secondary" id="refreshConsoleBtn" title="common.refresh" data-i18n="common.refresh" data-i18n-attr="title">
                     <i class="fas fa-sync-alt"></i>
                 </button>
-                <label style="display:inline-flex; align-items:center; gap:6px; font-size: 14px; color: var(--text-secondary);">
-                    <input type="checkbox" id="autoRefreshConsole"> <span data-i18n="modal.console.auto_refresh">modal.console.auto_refresh</span>
-                </label>
-                <label style="display:inline-flex; align-items:center; gap:6px; font-size: 14px; color: var(--text-secondary);">
-                    <span data-i18n="modal.console.interval_ms">modal.console.interval_ms</span>
-                    <input class="form-control" type="number" id="intervalConsoleInput" value="2000" min="500" style="width: 92px; padding: 4px 8px;">
-                </label>
                 <div id="consoleStatusText" style="font-size:12px; color:var(--text-secondary); margin-left:auto;"></div>
             </div>
         </div>
 
-        <div class="content-scrollable" style="padding: 0;">
-            <div id="logContainer" style="height: 100%; overflow:auto; padding:16px; font-family:'Menlo', 'Monaco', 'Courier New', monospace; background:#0f172a; color:#e5e7eb; font-size: 0.875rem;">
-                <pre id="consoleContent" style="margin:0; white-space:pre; word-break:normal; overflow-wrap:normal;"></pre>
+        <div class="console-tab-bar" id="consoleTabs">
+            <button class="console-tab-btn active" data-tab="local">本地</button>
+        </div>
+        <div class="console-tab-container" id="consoleTabContainer">
+            <div class="console-tab-panel active" data-panel="local">
+                <div id="logContainer" style="height: 100%; overflow:auto; padding:16px; font-family:'Menlo', 'Monaco', 'Courier New', monospace; background:#0f172a; color:#e5e7eb; font-size: 0.875rem;">
+                    <pre id="consoleContent" style="margin:0; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word;"></pre>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Benchmark V3 Panel -->
+    <main class="main-area" id="main-benchmark-v3" style="display: none">
+        <div class="top-bar">
+            <h1 class="page-title"><i class="fas fa-gauge-high"></i> 性能测试</h1>
+        </div>
+        <div class="warn-banner">
+            <i class="fas fa-triangle-exclamation"></i>
+            <span>性能测试会对计算机产生较高的负载，并且根据计算机性能的不同（如 CPU 推理 VS RTX 5090 推理）花费的时间也不同，请务必了解这一点！</span>
+        </div>
+        <div class="tab-bar">
+            <button class="tab-btn active" data-tab="llama-server"><i class="fas fa-server"></i> llama-server</button>
+            <button class="tab-btn" data-tab="llama-bench"><i class="fas fa-flask"></i> llama-bench</button>
+        </div>
+        <div class="tab-container">
+            <div id="benchPanel" class="tab-panel">
+                <div class="left-col">
+                    <div class="card stretch">
+                        <div class="model-list-header"><strong style="font-size:12px;">模型列表</strong><span id="benchModelsMeta" class="sub-text"></span></div>
+                        <div class="row"><select id="benchNodeFilter" class="form-control"><option value="all">全部节点</option><option value="local">本机</option></select></div>
+                        <input id="benchSearchInput" type="text" class="form-control" placeholder="搜索模型…" style="flex-shrink:0;" />
+                        <div id="benchModelList" class="model-menu"></div>
+                    </div>
+                </div>
+                <div class="right-col">
+                    <div class="card shrink">
+                        <div class="bench-actions">
+                            <button id="runBenchBtn" class="btn btn-primary" style="font-size:12px;">运行</button>
+                            <button id="benchParamsBtn" class="btn" style="font-size:12px;">参数设置</button>
+                        </div>
+                        <span id="benchParamsStatus" class="sub-text" style="text-align:center;display:block;"></span>
+                    </div>
+                    <div class="card shrink"><div class="row"><label>Llama.cpp 版本</label><select id="benchLlamaBinSelect" class="form-control"></select></div></div>
+                    <div class="rec-card">
+                        <div class="rec-header">
+                            <div class="left-group"><strong style="font-size:12px;">测试结果</strong><span id="benchSelModelText" class="pill" style="display:none;"></span></div>
+                            <div class="export-btns"><button id="benchCopyBtn" class="record-action-btn" disabled><i class="fas fa-copy"></i> 复制</button><button id="benchExportBtn" class="record-action-btn" disabled><i class="fas fa-download"></i> TXT</button></div>
+                        </div>
+                        <div class="bench-result-body">
+                            <div class="history-col"><div class="history-header"><span>历史记录</span><span id="benchHistoryCount" style="font-size:10px;"></span></div><div id="benchHistoryList" class="history-list"><div class="history-empty">请选择模型</div></div></div>
+                            <div class="output-col"><pre id="benchOutput" style="flex:1;min-height:0;overflow:auto;margin:0;padding:10px;background:var(--bg-color);border:1px solid var(--border-color);border-radius:8px;font-size:11px;font-family:'Consolas','Monaco','Courier New',monospace;line-height:1.5;white-space:pre-wrap;word-break:break-all;color:var(--text-primary);">暂无结果</pre><div id="benchOutputMeta" class="output-meta"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="serverPanel" class="tab-panel active">
+                <div class="left-col">
+                    <div class="card stretch">
+                        <div class="model-list-header"><strong style="font-size:12px;">模型列表</strong><span id="serverModelsMeta" class="sub-text"></span></div>
+                        <div class="row"><select id="serverNodeFilter" class="form-control"><option value="all">全部节点</option><option value="local">本机</option></select></div>
+                        <input id="serverSearchInput" type="text" class="form-control" placeholder="搜索模型…" style="flex-shrink:0;" />
+                        <div id="serverModelList" class="model-menu"></div>
+                    </div>
+                </div>
+                <div class="mid-col">
+                    <div class="card shrink">
+                        <div class="row"><label>提示词长度</label><input id="serverPromptTokens" type="number" class="form-control" value="8192" min="1" /></div>
+                        <div class="row"><label>输出最大 token</label><input id="serverMaxTokens" type="number" class="form-control" value="256" min="1" /></div>
+                        <div class="row"><label>并发次数</label><input id="serverConcurrency" type="number" class="form-control" value="1" min="1" step="1" /></div>
+                        <div class="bench-actions"><button id="runServerBtn" class="btn btn-primary" style="font-size:12px;width:100%;">运行</button></div>
+                    </div>
+                </div>
+                <div class="right-col">
+                    <div class="rec-card">
+                        <div class="rec-header">
+                            <div class="left-group"><strong style="font-size:12px;">测试记录</strong><span id="serverSelModelText" class="pill" style="display:none;"></span><span id="serverStatus" class="sub-text"></span></div>
+                            <div class="export-btns"><button class="server-export" data-format="csv"><i class="fas fa-file-csv"></i> CSV</button><button class="server-export" data-format="json"><i class="fas fa-file-code"></i> JSON</button><button class="server-export" data-format="md"><i class="fas fa-markdown"></i> MD</button></div>
+                        </div>
+                        <div class="chart-wrap" id="serverChartWrap"><canvas id="serverChartCanvas"></canvas><div id="serverChartEmpty" class="chart-empty">暂无数据</div></div>
+                        <div class="table-wrap"><table class="result-table"><thead><tr><th>时间</th><th>模型</th><th>提示词</th><th>预填充(token/s)</th><th>输出</th><th>输出(token/s)</th><th>操作</th></tr></thead><tbody id="serverResultBody"><tr id="serverEmptyRow"><td class="empty" colspan="7">暂无记录</td></tr></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Usage Report -->
+    <main class="main-area" id="main-usage-report" style="display: none">
+        <div class="top-bar">
+            <h1 class="page-title"><i class="fas fa-chart-simple"></i> 用量报表</h1>
+        </div>
+        <div class="tab-bar">
+            <button class="active" data-tab="token-summary" onclick="UsageReport.switchTab('token-summary')">Token 概览</button>
+            <button data-tab="request-logs" onclick="UsageReport.switchTab('request-logs')">请求记录</button>
+        </div>
+        <div class="content-scrollable">
+            <div class="tab-panel active" id="panel-token-summary">
+                <div class="report-summary" id="tokenSummaryStats"></div>
+                <div class="report-card report-card-row">
+                    <div class="token-table-col">
+                        <div class="token-scroll" id="tokenSummaryBody">
+                        </div>
+                    </div>
+                    <div class="token-chart-col">
+                        <div class="chart-wrap" id="tokenChartWrap">
+                            <canvas id="tokenChartCanvas"></canvas>
+                            <div id="tokenChartEmpty" class="chart-empty">暂无数据</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-panel" id="panel-request-logs">
+                <div class="report-filter">
+                    <label>模型筛选：</label>
+                    <select id="requestLogModelFilter" onchange="UsageReport.filterByModel()">
+                        <option value="">全部</option>
+                    </select>
+                    <span style="flex:1"></span>
+                    <div class="report-pagination">
+                        <button id="reqLogPrev" onclick="UsageReport.prevPage()"><i class="fas fa-chevron-left"></i> 上一页</button>
+                        <span id="reqLogPageInfo">第 1 页</span>
+                        <button id="reqLogNext" onclick="UsageReport.nextPage()">下一页 <i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="report-card">
+                    <div class="table-wrap">
+                        <table class="report-table">
+                            <thead><tr><th>时间</th><th>模型</th><th>端点</th><th data-i18n="report.cache_tokens">缓存 Token</th><th>Prompt Token</th><th>Predicted Token</th><th>总 Token</th><th>耗时(ms)</th><th>Prompt 速度(tok/s)</th><th>Predicted 速度(tok/s)</th></tr></thead>
+                            <tbody id="requestLogBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -970,17 +1326,33 @@
                         <input type="url" class="form-control" id="downloadUrl" name="downloadUrl" placeholder="https://example.com/file.zip" required>
                         <small class="form-text" data-i18n="modal.download_create.url_desc">modal.download_create.url_desc</small>
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label" for="downloadPath" data-i18n="modal.download_create.path">modal.download_create.path</label>
-                        <input type="text" class="form-control" id="downloadPath" name="downloadPath" placeholder="downloads" value="C:\Users\Mark\Downloads" required>
-                        <small class="form-text" data-i18n="modal.download_create.path_desc">modal.download_create.path_desc</small>
-                    </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label" for="downloadFileName" data-i18n="modal.download_create.filename_optional">modal.download_create.filename_optional</label>
                         <input type="text" class="form-control" id="downloadFileName" name="downloadFileName" placeholder="modal.download_create.filename_placeholder" data-i18n="modal.download_create.filename_placeholder" data-i18n-attr="placeholder">
                         <small class="form-text" data-i18n="modal.download_create.filename_desc">modal.download_create.filename_desc</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" id="autoCreateFolder" checked onchange="toggleAutoFolder()">
+                            <span data-i18n="modal.download_create.auto_folder">自动创建文件夹</span>
+                        </label>
+                        <small class="form-text" data-i18n="modal.download_create.auto_folder_desc">根据文件名自动创建文件夹存放下载文件</small>
+                    </div>
+
+                    <div class="form-group" id="folderNameGroup" style="display:none">
+                        <label class="form-label" for="downloadFolderName" data-i18n="modal.download_create.folder_name">文件夹名称</label>
+                        <input type="text" class="form-control" id="downloadFolderName" name="folderName" placeholder="my-model-folder">
+                        <small class="form-text" data-i18n="modal.download_create.folder_name_desc">下载的文件将放在此文件夹中</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="downloadNodeId" data-i18n="modal.download_create.node">下载节点</label>
+                        <select id="downloadNodeId" class="form-control">
+                            <option value="local" data-i18n="page.model.filter.local">本机</option>
+                        </select>
+                        <small class="form-text" data-i18n="modal.download_create.node_desc">选择远程节点执行下载任务</small>
                     </div>
                 </form>
             </div>
@@ -991,25 +1363,71 @@
         </div>
     </div>
 
-    <div class="modal" id="settingsModal">
-        <div class="modal-content">
+    <!-- Node Form Modal -->
+    <div class="modal" id="nodeFormModal">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3 class="modal-title"><i class="fas fa-cog"></i> <span data-i18n="modal.system_settings.title">modal.system_settings.title</span></h3>
-                <button class="modal-close" onclick="closeModal('settingsModal')">&times;</button>
+                <h3 class="modal-title"><i class="fas fa-network-wired"></i> <span id="nodeFormTitle" data-i18n="modal.node.add_title">添加节点</span></h3>
+                <button class="modal-close" onclick="closeModal('nodeFormModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="settingsForm">
-                    <div class="form-group">
-                        <label class="form-label" for="defaultDownloadPath" data-i18n="modal.system_settings.default_download_dir">modal.system_settings.default_download_dir</label>
-                        <input type="text" class="form-control" id="defaultDownloadPath" name="defaultDownloadPath" placeholder="download">
-                        <small class="form-text" data-i18n="modal.system_settings.default_download_dir_desc">modal.system_settings.default_download_dir_desc</small>
-                    </div>
-                </form>
+                <div class="form-group">
+                    <label class="form-label">节点 ID <span style="color:red">*</span></label>
+                    <input class="form-control" id="nodeFormId" placeholder="server-gpu-a">
+                    <small class="form-text" data-i18n="modal.node.id_desc">唯一标识，添加后不可修改</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="common.name">显示名称</label>
+                    <input class="form-control" id="nodeFormName" placeholder="GPU 服务器 A">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">URL <span style="color:red">*</span></label>
+                    <input class="form-control" id="nodeFormUrl" placeholder="http://192.168.1.100:8080">
+                    <small class="form-text" data-i18n="modal.node.url_desc">必须以 http:// 或 https:// 开头</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="page.settings.security.api_key">API Key（可选）</label>
+                    <input class="form-control" type="password" id="nodeFormKey" placeholder="远程节点的 API Key">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="modal.node.tags">标签（逗号分隔）</label>
+                    <input class="form-control" id="nodeFormTags" placeholder="A100, production">
+                </div>
+                <div class="form-check" style="margin-top:0.75rem;">
+                    <input type="checkbox" id="nodeFormEnabled" checked>
+                    <label class="form-check-label" for="nodeFormEnabled" data-i18n="common.enable">启用</label>
+                </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('settingsModal')" data-i18n="common.cancel">common.cancel</button>
-                <button class="btn btn-primary" onclick="DownloadManager.saveSettings()" data-i18n="modal.system_settings.save">modal.system_settings.save</button>
+                <button class="btn btn-secondary" onclick="closeModal('nodeFormModal')" data-i18n="common.cancel">取消</button>
+                <button class="btn btn-primary" onclick="SettingsPage.saveNodeForm()" data-i18n="common.save">保存</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Benchmark V3 Params Modal -->
+    <div id="benchParamsModal" style="display:none;">
+        <div class="bench-modal-dialog">
+            <div class="bench-modal-header">
+                <h2 style="margin:0;font-size:17px;font-weight:700;">参数设置</h2>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span id="benchParamsModalStatus" class="sub-text"></span>
+                    <button id="benchParamsResetBtn" class="btn btn-secondary" style="font-size:12px;">重置</button>
+                    <button id="benchParamsCloseBtn" class="btn btn-secondary" style="font-size:12px;"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="bench-modal-body" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;gap:16px;overflow:hidden;padding:0;">
+                <div id="benchParamsDevicePanel" style="display:flex;flex-direction:column;gap:6px;min-height:0;padding:14px 0 14px 18px;">
+                    <label class="form-label" style="font-size:13px;">GPU 设备</label>
+                    <small class="form-text">勾选要使用的 GPU，取消勾选则生成 -dev 参数排除该设备</small>
+                    <div id="benchParamsDeviceList" style="border:1px solid var(--border-color);border-radius:0.75rem;padding:0.5rem;max-height:60vh;overflow:auto;"><div class="device-placeholder">选择 llama.cpp 版本后显示</div></div>
+                    <label class="form-label" for="benchMainGpuSelect" style="font-size:13px;margin-top:4px;">主要 GPU</label>
+                    <small class="form-text">设置 llama-bench 使用的主 GPU（--main-gpu）</small>
+                    <select id="benchMainGpuSelect" class="form-control" style="margin-top:2px;"><option value="-1">默认</option></select>
+                </div>
+                <div id="benchParamsContainer" style="overflow-y:auto;min-height:0;padding:14px 18px 14px 6px;"><div style="text-align:center;padding:24px;font-size:12px;color:var(--text-secondary);">加载参数中…</div></div>
+            </div>
+            <div class="bench-modal-footer"><button id="benchParamsConfirmBtn" class="btn btn-primary" style="font-size:13px;">确认</button></div>
         </div>
     </div>
 
@@ -1017,6 +1435,7 @@
     <div id="dynamicModalRoot"></div>
     <div class="toast-container" id="toastContainer"></div>
 
+    <script src="js/marked.umd.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/websocket.js"></script>
     <script src="js/console-modal.js"></script>
@@ -1028,6 +1447,7 @@
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', function() {
             initWebSocket();
+            fetchRemoteNodes();
             initModelSearch();
             loadParamConfig();
             loadBuildInfo();
@@ -1800,7 +2220,7 @@
         function closeModal(id) {
             const el = document.getElementById(id);
             if (el) el.classList.remove('show');
-            if (id === 'consoleModal') stopConsoleAuto();
+            //stopConsoleAuto();
             if (id === 'loadModelModal') {
                 document.getElementById('loadModelForm').reset();
                 const btn = document.getElementById('modelActionSubmitBtn');
@@ -1815,9 +2235,9 @@
             if (id === 'createDownloadModal') {
                 const form = document.getElementById('createDownloadForm');
                 if (form) form.reset();
+                const cb = document.getElementById('autoCreateFolder');
+                if (cb) { cb.checked = true; toggleAutoFolder(); }
             } else if (id === 'settingsModal') {
-                const form = document.getElementById('settingsForm');
-                if (form) form.reset();
             }
         }
         
@@ -1831,6 +2251,12 @@
                 }
             }
         };
+
+        function toggleAutoFolder() {
+            const cb = document.getElementById('autoCreateFolder');
+            const group = document.getElementById('folderNameGroup');
+            if (cb && group) group.style.display = cb.checked ? 'none' : '';
+        }
 
         function showToast(title, msg, type = 'info') {
             const container = document.getElementById('toastContainer');
@@ -2228,6 +2654,13 @@
             document.getElementById('modelSearchInput').addEventListener('input', (e) => filterModels(e.target.value));
         }
 
+        function escapeHtmlCompat(str) {
+            return String(str).replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); });
+        }
+        function escapeAttrCompat(str) {
+            return escapeHtmlCompat(str).replace(/`/g, '&#96;');
+        }
+
         // 显示模型列表页面
         function showModelList() {
             document.getElementById('main-model-list').style.display = '';
@@ -2238,7 +2671,9 @@
             document.getElementById('main-download').style.display = 'none';
             document.getElementById('main-console').style.display = 'none';
             document.getElementById('main-device-status').style.display = 'none';
-            stopConsoleAuto();
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
+            //stopConsoleAuto();
             stopDeviceStatusAuto();
             //refreshModels();
             // 更新导航项高亮
@@ -2258,7 +2693,9 @@
             document.getElementById('main-download').style.display = 'none';
             document.getElementById('main-console').style.display = 'none';
             document.getElementById('main-device-status').style.display = 'none';
-            stopConsoleAuto();
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
+            //stopConsoleAuto();
             stopDeviceStatusAuto();
             loadLlamaCppList();
             // 更新导航项高亮
@@ -2278,7 +2715,9 @@
             document.getElementById('main-download').style.display = 'none';
             document.getElementById('main-console').style.display = 'none';
             document.getElementById('main-device-status').style.display = 'none';
-            stopConsoleAuto();
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
+            //stopConsoleAuto();
             stopDeviceStatusAuto();
             loadModelPathList();
             // 更新导航项高亮
@@ -2297,6 +2736,8 @@
             document.getElementById('main-download').style.display = 'none';
             document.getElementById('main-console').style.display = '';
             document.getElementById('main-device-status').style.display = 'none';
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
             stopDeviceStatusAuto();
             openConsoleModal();
             const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
@@ -2315,7 +2756,9 @@
             document.getElementById('main-download').style.display = 'none';
             document.getElementById('main-console').style.display = 'none';
             document.getElementById('main-device-status').style.display = 'none';
-            stopConsoleAuto();
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
+            //stopConsoleAuto();
             stopDeviceStatusAuto();
             const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
             navItems.forEach(item => item.classList.remove('active'));
@@ -2332,7 +2775,9 @@
             document.getElementById('main-settings').style.display = 'none';
             document.getElementById('main-console').style.display = 'none';
             document.getElementById('main-device-status').style.display = 'none';
-            stopConsoleAuto();
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
+            //stopConsoleAuto();
             stopDeviceStatusAuto();
             const main = document.getElementById('main-download');
             const hasEntered = main && main.dataset && main.dataset.entered === '1';
@@ -2354,7 +2799,9 @@
             document.getElementById('main-download').style.display = 'none';
             document.getElementById('main-console').style.display = 'none';
             document.getElementById('main-device-status').style.display = 'none';
-            stopConsoleAuto();
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
+            //stopConsoleAuto();
             stopDeviceStatusAuto();
             const main = document.getElementById('main-settings');
             if (main) main.style.display = '';
@@ -2421,7 +2868,9 @@
             document.getElementById('main-download').style.display = 'none';
             document.getElementById('main-console').style.display = 'none';
             document.getElementById('main-device-status').style.display = '';
-            stopConsoleAuto();
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
+            //stopConsoleAuto();
             const contentEl = document.getElementById('deviceStatusContent');
             if (contentEl) contentEl.textContent = '';
             fetchDeviceStatus();
@@ -2521,12 +2970,53 @@
                 });
             }
         }
+
+        function showBenchmarkV3() {
+            document.getElementById('main-model-list').style.display = 'none';
+            document.getElementById('main-llamacpp-setting').style.display = 'none';
+            document.getElementById('main-model-path-setting').style.display = 'none';
+            document.getElementById('main-settings').style.display = 'none';
+            document.getElementById('main-hf').style.display = 'none';
+            document.getElementById('main-download').style.display = 'none';
+            document.getElementById('main-console').style.display = 'none';
+            document.getElementById('main-device-status').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = 'none';
+            document.getElementById('main-benchmark-v3').style.display = '';
+            //stopConsoleAuto();
+            stopDeviceStatusAuto();
+            const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            const nav = document.getElementById('nav-benchmark-v3');
+            if (nav) nav.classList.add('active');
+            if (typeof initServerTab === 'function') initServerTab();
+        }
+
+        function showUsageReport() {
+            document.getElementById('main-model-list').style.display = 'none';
+            document.getElementById('main-llamacpp-setting').style.display = 'none';
+            document.getElementById('main-model-path-setting').style.display = 'none';
+            document.getElementById('main-settings').style.display = 'none';
+            document.getElementById('main-hf').style.display = 'none';
+            document.getElementById('main-download').style.display = 'none';
+            document.getElementById('main-console').style.display = 'none';
+            document.getElementById('main-device-status').style.display = 'none';
+            document.getElementById('main-benchmark-v3').style.display = 'none';
+            document.getElementById('main-usage-report').style.display = '';
+            //stopConsoleAuto();
+            stopDeviceStatusAuto();
+            const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            const nav = document.getElementById('nav-usage-report');
+            if (nav) nav.classList.add('active');
+            if (typeof UsageReport !== 'undefined' && UsageReport.load) UsageReport.load();
+        }
     </script>
     <script src="js/settings.js"></script>
     <script src="js/model-icon.js"></script>
     <script src="js/model-detail.js"></script>
     <script src="js/model-list.js"></script>
     <script src="js/model-action-modal.js"></script>
-    <script src="js/model-benchmark.js"></script>
+    <script src="js/benchmark-v3.js"></script>
+    <script src="js/usage-report.js"></script>
 </body>
 </html>

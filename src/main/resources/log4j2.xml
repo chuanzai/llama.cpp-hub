@@ -20,10 +20,14 @@
         </Delete>
       </DefaultRolloverStrategy>
     </RollingFile>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="${LOG_PATTERN}"/>
+    </Console>
   </Appenders>
   <Loggers>
     <Root level="INFO">
       <AppenderRef ref="File"/>
+      <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
 </Configuration>

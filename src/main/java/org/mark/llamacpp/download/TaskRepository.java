@@ -36,7 +36,7 @@ public class TaskRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskRepository.class);
 
-    private static final String REPOSITORY_DIR = "downloads";
+    private static final String REPOSITORY_DIR = "cache";
     private static final String TASKS_FILE = "tasks.json";
     private static final Path REPOSITORY_PATH = Paths.get(REPOSITORY_DIR);
     private static final Path TASKS_FILE_PATH = REPOSITORY_PATH.resolve(TASKS_FILE);

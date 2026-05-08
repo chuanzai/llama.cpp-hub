@@ -118,7 +118,6 @@ public class DownloadTaskManager implements Closeable {
 					snapshot = task.copy();
 				}
 				notifyStateChanged(snapshot, DownloadTaskStatus.RUNNING, DownloadTaskStatus.COMPLETED);
-				notifyTaskCompleted(snapshot);
 			} catch (IOException e) {
 				DownloadTaskInfo snapshot;
 				DownloadTaskStatus newStatus;
@@ -241,13 +240,25 @@ public class DownloadTaskManager implements Closeable {
 		return task;
 	}
 
-	private void deleteTaskFiles(DownloadTaskInfo task) throws IOException {
+	private void deleteTaskFiles(DownloadTaskInfo task) {
 		Path target = Path.of(task.getTargetPath());
 		Path temp = target.resolveSibling(target.getFileName() + ".downloading");
 		Path metadata = target.resolveSibling(target.getFileName() + ".downloading.meta");
-		Files.deleteIfExists(metadata);
-		Files.deleteIfExists(temp);
-		Files.deleteIfExists(target);
+		try {
+			Files.deleteIfExists(metadata);
+		} catch (IOException e) {
+			// ignore
+		}
+		try {
+			Files.deleteIfExists(temp);
+		} catch (IOException e) {
+			// ignore
+		}
+		try {
+			Files.deleteIfExists(target);
+		} catch (IOException e) {
+			// ignore — file may be in use (e.g. loaded model)
+		}
 	}
 
 	private boolean isPauseException(IOException e) {
