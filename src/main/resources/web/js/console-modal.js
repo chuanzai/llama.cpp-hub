@@ -145,6 +145,10 @@
             container.querySelectorAll('.console-tab-panel').forEach(function (p) {
                 p.classList.toggle('active', p.dataset.panel === id);
             });
+            if (id !== 'local') {
+                var c = document.getElementById('remoteLogContainer-' + id);
+                if (c) c.scrollTop = c.scrollHeight;
+            }
         });
     }
 
