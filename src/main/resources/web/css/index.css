@@ -364,6 +364,15 @@
             font-size: 0.75rem;
         }
 
+        .mtp-badge {
+            color: #7c3aed;
+            background-color: #ede9fe;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
         .model-slots { display: none !important; }
 
         .node-badge {

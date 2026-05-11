@@ -82,6 +82,7 @@ public final class MtpHelper {
 
         String arch = (String) meta.get("general.architecture");
         if (arch == null) return MtpInfo.none();
+        if (!"qwen35".equals(arch) && !"qwen35moe".equals(arch)) return MtpInfo.none();
 
         Number blockCount = (Number) meta.get(arch + ".block_count");
         Number nextn = (Number) meta.get(arch + ".nextn_predict_layers");
