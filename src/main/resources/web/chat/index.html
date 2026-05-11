@@ -979,7 +979,8 @@
           btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
           btn.addEventListener('click', () => {
             const code = pre.querySelector('code');
-            const text = code ? code.textContent : pre.textContent;
+            const text = (code ? code.textContent : pre.textContent) || '';
+            if (!text.trim()) return;
             navigator.clipboard.writeText(text).then(() => {
               btn.classList.add('copied');
               btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>';
@@ -987,6 +988,23 @@
                 btn.classList.remove('copied');
                 btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
               }, 1500);
+            }).catch(() => {
+              try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                btn.classList.add('copied');
+                btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>';
+                setTimeout(() => {
+                  btn.classList.remove('copied');
+                  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
+                }, 1500);
+              } catch (e) { /* clipboard unavailable */ }
             });
           });
           pre.appendChild(btn);
@@ -1021,8 +1039,8 @@
     function clearStreamingCache(target) {
       if (target) {
         streamingTextCache.delete(target);
-        target.style.whiteSpace = '';
-        target.style.wordBreak = '';
+        target.style.removeProperty('white-space');
+        target.style.removeProperty('word-break');
       }
     }
 
