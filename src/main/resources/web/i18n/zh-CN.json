@@ -940,5 +940,15 @@
   "page.settings.update.status.update_available": "发现新版本",
   "page.settings.update.status.check_failed": "检查失败",
   "page.settings.update.status.checking": "检查中...",
-  "page.settings.update.self_compiled": "自编译版本"
+  "page.settings.update.self_compiled": "自编译版本",
+  "page.settings.update.proxy.label": "加速地址",
+  "page.settings.update.proxy.off": "关闭",
+  "page.settings.update.action.download": "下载安装包",
+  "page.settings.update.action.download_version": "下载 {version}",
+  "page.settings.update.action.apply": "应用更新",
+  "page.settings.update.action.apply_version": "应用 {version}",
+  "page.settings.update.progress.preparing": "准备下载...",
+  "page.settings.update.progress.downloading": "下载更新包...",
+  "page.settings.update.error.download_failed": "下载失败",
+  "page.settings.update.error.self_compiled": "当前版本不支持自动更新"
 }

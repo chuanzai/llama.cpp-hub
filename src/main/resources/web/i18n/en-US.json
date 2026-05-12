@@ -940,5 +940,15 @@
   "page.settings.update.status.update_available": "Update available",
   "page.settings.update.status.check_failed": "Check failed",
   "page.settings.update.status.checking": "Checking...",
-  "page.settings.update.self_compiled": "Self-compiled"
+  "page.settings.update.self_compiled": "Self-compiled",
+  "page.settings.update.proxy.label": "Proxy",
+  "page.settings.update.proxy.off": "Off",
+  "page.settings.update.action.download": "Download",
+  "page.settings.update.action.download_version": "Download {version}",
+  "page.settings.update.action.apply": "Apply Update",
+  "page.settings.update.action.apply_version": "Apply {version}",
+  "page.settings.update.progress.preparing": "Preparing download...",
+  "page.settings.update.progress.downloading": "Downloading update...",
+  "page.settings.update.error.download_failed": "Download failed",
+  "page.settings.update.error.self_compiled": "Auto-update not supported for this version"
 }
