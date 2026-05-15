@@ -598,6 +598,9 @@
       }
       mathJaxLoading = true;
       window.MathJax = window.MathJax || {};
+      window.MathJax.startup = {
+        typeset: false
+      };
       window.MathJax.tex = {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
         displayMath: [['$$', '$$'], ['\\[', '\\]']],
@@ -950,13 +953,13 @@
       return restoreMathTokens(rendered, protectedMath.math);
     }
 
-     function renderRichText(target, text, options = {}) {
-       if (!target) {
-         return;
-       }
-       const source = String(text ?? '');
-       const isStreaming = !!options.isStreaming;
-       const isUser = options.role === 'user';
+      function renderRichText(target, text, options = {}) {
+        if (!target) {
+          return;
+        }
+        const source = String(text ?? '');
+        const isStreaming = !!options.isStreaming;
+        const isUser = String(options.role).toLowerCase() === 'user';
        if (isStreaming || isUser) {
          target.innerHTML = escapeHtml(source).replace(/\n/g, '<br>');
        } else {
