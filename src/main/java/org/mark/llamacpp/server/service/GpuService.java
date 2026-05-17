@@ -1,258 +1,125 @@
 package org.mark.llamacpp.server.service;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import org.mark.llamacpp.server.tools.GpuStatusTool;
-import org.mark.llamacpp.server.tools.GpuStatusTool.GpuInfo;
-import org.mark.llamacpp.server.tools.JsonUtil;
+import org.mark.llamacpp.server.tools.CommandLineRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * GPU服务
- * 初始化时探测系统GPU厂商并记录，查询时仅执行对应厂商的命令
+ * 启动时探测系统，检查 nvidia-smi / amd-smi 是否可用，查询时返回原始命令输出
  */
 public class GpuService {
 
-	private static final GpuService INSTANCE = new GpuService();
+    private static final Logger logger = LoggerFactory.getLogger(GpuService.class);
+    private static final GpuService INSTANCE = new GpuService();
 
-	public enum GpuVendor {
-		NVIDIA,
-		AMD,
-		APPLE
-	}
+    private final String os;
+    private final String osType;
 
-	private final String os;
-	private final Set<GpuVendor> detectedVendors;
-	private final List<GpuInfo> initialInfo;
+    private final boolean nvidiaSmiAvailable;
+    private final boolean amdSmiAvailable;
 
-	public static GpuService getInstance() {
-		return INSTANCE;
-	}
+    private final String nvidiaSmiInitOutput;
+    private final String amdSmiInitOutput;
 
-	private GpuService() {
-		this.os = System.getProperty("os.name").toLowerCase();
-		this.detectedVendors = new LinkedHashSet<>();
-		this.initialInfo = new ArrayList<>();
+    public static GpuService getInstance() {
+        return INSTANCE;
+    }
 
-		detectGpus();
-	}
+    private GpuService() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        this.os = osName;
+        this.osType = osName.contains("win") ? "windows" :
+                       osName.contains("mac") ? "mac" : "linux";
 
-	/**
-	 * 初始化时探测所有GPU并记录厂商信息
-	 */
-	private void detectGpus() {
-		if (os.contains("win")) {
-			detectWindows();
-		} else if (os.contains("mac")) {
-			detectMac();
-		} else {
-			detectLinux();
-		}
-	}
+        // 探测 nvidia-smi（Windows 和 Linux 均支持）
+        CommandLineRunner.CommandResult nvidiaResult = probeCommand(new String[]{"nvidia-smi"}, 5);
+        this.nvidiaSmiAvailable = nvidiaResult != null;
+        this.nvidiaSmiInitOutput = nvidiaResult != null ? nvidiaResult.getOutput() : null;
 
-	private void detectWindows() {
-		List<GpuInfo> nvidia = GpuStatusTool.detectNvidiaWindows();
-		if (nvidia != null && !nvidia.isEmpty()) {
-			detectedVendors.add(GpuVendor.NVIDIA);
-			initialInfo.addAll(nvidia);
-		}
+        // 探测 amd-smi（仅 Linux）
+        if ("linux".equals(this.osType)) {
+            CommandLineRunner.CommandResult amdResult = probeCommand(new String[]{"amd-smi"}, 5);
+            this.amdSmiAvailable = amdResult != null;
+            this.amdSmiInitOutput = amdResult != null ? amdResult.getOutput() : null;
+        } else {
+            this.amdSmiAvailable = false;
+            this.amdSmiInitOutput = null;
+        }
 
-		List<GpuInfo> amd = GpuStatusTool.detectAmdWindows();
-		if (amd != null && !amd.isEmpty()) {
-			detectedVendors.add(GpuVendor.AMD);
-			initialInfo.addAll(amd);
-		}
-	}
+        logger.info("GPU服务初始化: os={}, nvidia-smi={}, amd-smi={}",
+                this.osType, nvidiaSmiAvailable ? "可用" : "不可用", amdSmiAvailable ? "可用" : "不可用");
+    }
 
-	private void detectLinux() {
-		List<GpuInfo> nvidia = GpuStatusTool.detectNvidiaLinux();
-		if (nvidia != null && !nvidia.isEmpty()) {
-			detectedVendors.add(GpuVendor.NVIDIA);
-			initialInfo.addAll(nvidia);
-		}
+    /**
+     * 探测命令是否可用，可用则返回 CommandResult，不可用返回 null
+     */
+    private CommandLineRunner.CommandResult probeCommand(String[] cmd, int timeoutSeconds) {
+        CommandLineRunner.CommandResult result = CommandLineRunner.execute(cmd, timeoutSeconds);
+        if (result == null || result.getExitCode() == null || result.getExitCode() != 0) {
+            return null;
+        }
+        String output = result.getOutput();
+        if (output == null || output.trim().isEmpty()) {
+            return null;
+        }
+        return result;
+    }
 
-		List<GpuInfo> amd = GpuStatusTool.detectAmdLinux();
-		if (amd != null && !amd.isEmpty()) {
-			detectedVendors.add(GpuVendor.AMD);
-			initialInfo.addAll(amd);
-		}
-	}
+    /**
+     * 获取GPU信息（初始化时的快照）
+     */
+    public JsonObject getServiceInfo() {
+        return buildJson(this.nvidiaSmiInitOutput, this.amdSmiInitOutput);
+    }
 
-	private void detectMac() {
-		List<GpuInfo> apple = GpuStatusTool.detectMacGpu();
-		if (apple != null && !apple.isEmpty()) {
-			detectedVendors.add(GpuVendor.APPLE);
-			initialInfo.addAll(apple);
-		}
-	}
+    /**
+     * 查询GPU实时状态（重新执行命令）
+     */
+    public JsonObject queryGpuStatus() {
+        String nvidiaOutput = null;
+        if (this.nvidiaSmiAvailable) {
+            CommandLineRunner.CommandResult r = probeCommand(new String[]{"nvidia-smi"}, 5);
+            if (r != null) {
+                nvidiaOutput = r.getOutput();
+            }
+        }
 
-	/**
-	 * 获取当前系统GPU状态
-	 * 根据记录的厂商信息，只执行对应的检测命令
-	 */
-	public JsonObject queryGpuStatus() {
-		List<GpuInfo> all = new ArrayList<>();
+        String amdOutput = null;
+        if (this.amdSmiAvailable) {
+            CommandLineRunner.CommandResult r = probeCommand(new String[]{"amd-smi"}, 5);
+            if (r != null) {
+                amdOutput = r.getOutput();
+            }
+        }
 
-		for (GpuVendor vendor : detectedVendors) {
-			List<GpuInfo> gpus = queryVendorGpus(vendor);
-			if (gpus != null) {
-				all.addAll(gpus);
-			}
-		}
+        return buildJson(nvidiaOutput, amdOutput);
+    }
 
-		return buildResult(all);
-	}
+    private JsonObject buildJson(String nvidiaOutput, String amdOutput) {
+        JsonObject result = new JsonObject();
+        result.addProperty("os", this.osType);
 
-	/**
-	 * 查询指定厂商的GPU实时状态
-	 */
-	private List<GpuInfo> queryVendorGpus(GpuVendor vendor) {
-		switch (vendor) {
-			case NVIDIA:
-				if (os.contains("win")) {
-					return GpuStatusTool.detectNvidiaWindows();
-				} else {
-					return GpuStatusTool.detectNvidiaLinux();
-				}
-			case AMD:
-				if (os.contains("win")) {
-					return GpuStatusTool.detectAmdWindows();
-				} else {
-					return GpuStatusTool.detectAmdLinux();
-				}
-			case APPLE:
-				return GpuStatusTool.detectMacGpu();
-			default:
-				return null;
-		}
-	}
+        JsonObject nvidia = new JsonObject();
+        nvidia.addProperty("available", this.nvidiaSmiAvailable);
+        if (nvidiaOutput != null) {
+            nvidia.addProperty("output", nvidiaOutput);
+        } else {
+            nvidia.addProperty("output", (String) null);
+        }
+        result.add("nvidia-smi", nvidia);
 
-	/**
-	 * 获取指定厂商的GPU列表
-	 */
-	public List<GpuInfo> getGpusByVendor(GpuVendor vendor) {
-		List<GpuInfo> result = new ArrayList<>();
-		for (GpuInfo info : initialInfo) {
-			if (vendor.name().equals(info.getVendor())) {
-				result.add(info);
-			}
-		}
-		return result;
-	}
+        JsonObject amd = new JsonObject();
+        amd.addProperty("available", this.amdSmiAvailable);
+        if (amdOutput != null) {
+            amd.addProperty("output", amdOutput);
+        } else {
+            amd.addProperty("output", (String) null);
+        }
+        result.add("amd-smi", amd);
 
-	/**
-	 * 获取所有已记录的GPU信息（初始化时的快照）
-	 */
-	public List<GpuInfo> getAllGpus() {
-		return new ArrayList<>(initialInfo);
-	}
-
-	/**
-	 * 获取已检测到的厂商列表
-	 */
-	public List<GpuVendor> getDetectedVendors() {
-		return new ArrayList<>(detectedVendors);
-	}
-
-	/**
-	 * 是否包含指定厂商的GPU
-	 */
-	public boolean hasVendor(GpuVendor vendor) {
-		return detectedVendors.contains(vendor);
-	}
-
-	/**
-	 * 获取GPU总数
-	 */
-	public int getTotalGpuCount() {
-		return initialInfo.size();
-	}
-
-	/**
-	 * 获取操作系统类型
-	 */
-	public String getOs() {
-		return os;
-	}
-
-	/**
-	 * 获取服务信息摘要
-	 */
-	public JsonObject getServiceInfo() {
-		JsonObject info = new JsonObject();
-		info.addProperty("os", os);
-		info.addProperty("totalGpuCount", initialInfo.size());
-
-		JsonArray vendors = new JsonArray();
-		for (GpuVendor v : detectedVendors) {
-			JsonObject vObj = new JsonObject();
-			vObj.addProperty("vendor", v.name());
-			vObj.addProperty("gpuCount", getGpusByVendor(v).size());
-			vendors.add(vObj);
-		}
-		info.add("vendors", vendors);
-
-		JsonArray gpus = new JsonArray();
-		for (GpuInfo gpu : initialInfo) {
-			JsonObject g = new JsonObject();
-			g.addProperty("vendor", gpu.getVendor());
-			g.addProperty("name", gpu.getName());
-			g.addProperty("memoryTotalMiB", gpu.getMemoryTotal());
-			g.addProperty("driverVersion", gpu.getDriverVersion());
-			gpus.add(g);
-		}
-		info.add("gpus", gpus);
-		return info;
-	}
-
-	private JsonObject buildResult(List<GpuInfo> gpus) {
-		JsonObject result = new JsonObject();
-		result.addProperty("os", os);
-		result.addProperty("timestamp", System.currentTimeMillis());
-
-		if (gpus == null || gpus.isEmpty()) {
-			result.addProperty("count", 0);
-			result.add("gpus", new JsonArray());
-			return result;
-		}
-
-		Set<String> vendors = new LinkedHashSet<>();
-		for (GpuInfo g : gpus) {
-			if (g.getVendor() != null) vendors.add(g.getVendor());
-		}
-		result.addProperty("vendors", JsonUtil.toJson(new ArrayList<>(vendors)));
-		result.addProperty("count", gpus.size());
-
-		JsonArray gpuArray = new JsonArray();
-		for (GpuInfo info : gpus) {
-			JsonObject obj = new JsonObject();
-			obj.addProperty("vendor", info.getVendor());
-			obj.addProperty("name", info.getName());
-			obj.addProperty("driverVersion", info.getDriverVersion());
-			obj.addProperty("temperature", info.getTemperature());
-			obj.addProperty("gpuUtilization", info.getGpuUtilization());
-			obj.addProperty("memoryUsedMiB", info.getMemoryUsed());
-			obj.addProperty("memoryTotalMiB", info.getMemoryTotal());
-			obj.addProperty("memoryUtilization", info.getMemoryUtilization());
-			obj.addProperty("powerUsageW", info.getPowerUsage());
-			obj.addProperty("powerLimitW", info.getPowerLimit());
-			obj.addProperty("fanSpeed", info.getFanSpeed());
-			obj.addProperty("pciBusId", info.getPciBusId());
-			obj.addProperty("rawOutput", info.getRawOutput());
-
-			if (info.getMemoryTotal() > 0) {
-				double pct = info.getMemoryUsed() * 100.0 / info.getMemoryTotal();
-				obj.addProperty("memoryUsedPercent", Math.round(pct * 10.0) / 10.0);
-			}
-
-			gpuArray.add(obj);
-		}
-		result.add("gpus", gpuArray);
-		return result;
-	}
+        return result;
+    }
 }

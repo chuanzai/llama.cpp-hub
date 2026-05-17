@@ -307,6 +307,7 @@ public class ModelActionController implements BaseController {
 			}
 			modelInfo.put("architecture", architecture);
 			modelInfo.put("quantization", quantization);
+			modelInfo.put("hasMtp", primaryModel != null && primaryModel.getMtpInfo().hasMtp());
 			modelInfo.put("nodeId", "local");
 			modelInfo.put("nodeName", "本机");
 

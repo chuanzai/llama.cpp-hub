@@ -1680,6 +1680,7 @@ public class LlamaServerManager {
 		// 拼接完整命令路径
 		String command = llamaBinPath.trim() + File.separator + executableName;
 		command += " --model " + model.getPrimaryModel().getFilePath();
+		command += " -lv 4";
 		
 		for(String key : keysParam) {
 			// 如果有这个参数
@@ -1733,6 +1734,63 @@ public class LlamaServerManager {
 			this.modelPorts.clear();
 		}
 		this.executorService.shutdown();
+	}
+
+	/**
+	 * 扫描 llamacpp/ 下已安装的 cudart 运行库目录。
+	 * 判断标准：目录包含 cublas64_*.dll、cublasLt64_*.dll、cudart64_*.dll 三个文件。
+	 * @return 已安装的 cudart 目录名列表
+	 */
+	public List<String> scanCudartPackages() {
+		List<String> result = new ArrayList<>();
+		String root = LlamaServer.getDefaultLlamaCppPath();
+		Path rootPath = Paths.get(root);
+		if (!Files.exists(rootPath) || !Files.isDirectory(rootPath)) {
+			return result;
+		}
+		try (Stream<Path> entries = Files.list(rootPath)) {
+			for (Path subDir : entries.toList()) {
+				if (!Files.isDirectory(subDir)) {
+					continue;
+				}
+				if (!hasCudartDlls(subDir)) {
+					continue;
+				}
+				result.add(subDir.getFileName().toString());
+			}
+		} catch (IOException e) {
+			logger.warn("扫描 cudart 目录失败: {}", e.getMessage());
+		}
+		return result;
+	}
+
+	/**
+	 * 判断目录下是否包含 cudart 运行库所需的三个 DLL 文件。
+	 */
+	private static boolean hasCudartDlls(Path dir) {
+		try (Stream<Path> entries = Files.list(dir)) {
+			boolean hasCublas = false;
+			boolean hasCublasLt = false;
+			boolean hasCudart = false;
+			for (Path entry : entries.toList()) {
+				if (!Files.isRegularFile(entry)) {
+					continue;
+				}
+				String name = entry.getFileName().toString();
+				if (name.toLowerCase().startsWith("cublas64_") && name.toLowerCase().endsWith(".dll")) {
+					hasCublas = true;
+				}
+				if (name.toLowerCase().startsWith("cublaslt64_") && name.toLowerCase().endsWith(".dll")) {
+					hasCublasLt = true;
+				}
+				if (name.toLowerCase().startsWith("cudart64_") && name.toLowerCase().endsWith(".dll")) {
+					hasCudart = true;
+				}
+			}
+			return hasCublas && hasCublasLt && hasCudart;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 	
 }

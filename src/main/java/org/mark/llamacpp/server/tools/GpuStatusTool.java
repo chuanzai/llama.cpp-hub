@@ -10,8 +10,10 @@ import com.google.gson.JsonObject;
 
 /**
  * GPU状态检测工具
- * 通过命令行抓取当前系统的GPU信息，支持NVIDIA/AMD/macOS
+ * 通过命令行抓取当前系统的GPU信息，支持NVIDIA/AMD/macOS。<br>
+ * 	过时的实现，以后待优化。
  */
+@Deprecated
 public class GpuStatusTool {
 
 	private GpuStatusTool() {

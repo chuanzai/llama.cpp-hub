@@ -88,8 +88,8 @@ function escapeHtml(text) {
 async function fetchJson(url, options) {
   const resp = await fetch(url, options || {});
   const text = await resp.text();
-  let json; try { json = JSON.parse(text); } catch(e) { json = { success: false, error: text || '请求失败' }; }
-  if (!resp.ok) throw new Error((json && json.error) ? json.error : '请求失败');
+  let json; try { json = JSON.parse(text); } catch(e) { json = { success: false, error: text || t('common.request_failed', '请求失败') }; }
+  if (!resp.ok) throw new Error((json && json.error) ? json.error : t('common.request_failed', '请求失败'));
   return json;
 }
 function downloadBlob(blob, filename) {
@@ -105,6 +105,19 @@ function nodeQueryParam(nodeId) {
 }
 function setNodeIdOnBody(payload, nodeId) {
   if (nodeId) payload.nodeId = nodeId;
+}
+function modelLoadedKey(id, nodeId) {
+  return id + '::' + (nodeId || 'local');
+}
+function findModelButton(listEl, modelId, nodeId) {
+  if (!listEl) return null;
+  if (nodeId && nodeId !== 'all' && nodeId !== 'local') {
+    return listEl.querySelector('button[data-model-id="' + modelId + '"][data-node-id="' + nodeId + '"]');
+  }
+  if (!nodeId || nodeId === 'local') {
+    return listEl.querySelector('button[data-model-id="' + modelId + '"]:not([data-node-id])');
+  }
+  return listEl.querySelector('button[data-model-id="' + modelId + '"]');
 }
 function modelDisplayId(m) {
   const id = safeText(m && m.id).trim();
@@ -133,15 +146,21 @@ function modelNodeId(state, selectEl) {
   return effectiveNodeId(state);
 }
 function benchModelNodeId() {
+  if (bench.selectedModelId && bench.selectedNodeId) {
+    return bench.selectedNodeId === 'local' ? '' : bench.selectedNodeId;
+  }
   if (bench.selectedModelId) {
-    const btn = E.bench.modelList ? E.bench.modelList.querySelector('button[data-model-id="' + bench.selectedModelId + '"]') : null;
+    const btn = findModelButton(E.bench.modelList, bench.selectedModelId, bench.selectedNodeId);
     if (btn && btn.dataset && btn.dataset.nodeId) return btn.dataset.nodeId;
   }
   return effectiveNodeId(bench);
 }
 function serverModelNodeId() {
+  if (server.selectedModelId && server.selectedNodeId) {
+    return server.selectedNodeId === 'local' ? '' : server.selectedNodeId;
+  }
   if (server.selectedModelId) {
-    const btn = E.server.modelList ? E.server.modelList.querySelector('button[data-model-id="' + server.selectedModelId + '"]') : null;
+    const btn = findModelButton(E.server.modelList, server.selectedModelId, server.selectedNodeId);
     if (btn && btn.dataset && btn.dataset.nodeId) return btn.dataset.nodeId;
   }
   return effectiveNodeId(server);
@@ -158,23 +177,24 @@ function matchesFilter(state, model) {
 function updateModelsMeta(state, el, totalCount) {
   if (!el) return;
   const total = totalCount != null ? totalCount : (Array.isArray(state.allModels) ? state.allModels.length : 0);
-  const loaded = state.loadedModelIds ? state.loadedModelIds.size : 0;
+  const loadedInList = state.allModels ? state.allModels.filter(m => state.loadedModelIds && state.loadedModelIds.has(modelLoadedKey(safeText(m && m.id).trim(), m && (m.nodeId || m.node).trim()))).length : 0;
   if (state.filterText && total > 0) {
     const filtered = (state.allModels || []).filter(m => matchesFilter(state, m)).length;
-    el.textContent = '匹配 ' + filtered + '/' + total + '，已加载 ' + loaded;
+    el.textContent = t('page.benchmark_v3.model_count', '匹配 {filtered}/{total}，已加载 {loaded}').replace('{filtered}', filtered).replace('{total}', total).replace('{loaded}', loadedInList);
   } else {
-    el.textContent = '总计 ' + total + '，已加载 ' + loaded;
+    el.textContent = t('page.benchmark_v3.model_count_loaded', '总计 {total}，已加载 {loaded}').replace('{total}', total).replace('{loaded}', loadedInList);
   }
 }
 function updateActiveModelItem(state, listEl) {
   if (!listEl) return;
+  const selId = state.selectedModelId;
+  const selNode = state.selectedNodeId || '';
   listEl.querySelectorAll('button[data-model-id]').forEach(btn => {
     const btnModelId = btn.dataset.modelId;
     const btnNodeId = btn.dataset.nodeId || '';
-    const selectedId = state.selectedModelId;
-    if (!selectedId || btnModelId !== selectedId) { btn.classList.remove('active'); return; }
-    if (!state.selectedNodeId || state.selectedNodeId === 'all') { btn.classList.add('active'); return; }
-    btn.classList.toggle('active', btnNodeId === state.selectedNodeId || (!btnNodeId && state.selectedNodeId === 'local'));
+    if (!selId || btnModelId !== selId) { btn.classList.remove('active'); return; }
+    if (!selNode || selNode === 'all') { btn.classList.add('active'); return; }
+    btn.classList.toggle('active', btnNodeId === selNode || (!btnNodeId && selNode === 'local'));
   });
 }
 function renderBenchModelList(state, listEl, metaEl) {
@@ -193,7 +213,7 @@ function renderBenchModelList(state, listEl, metaEl) {
   if (!list.length) {
     const el = document.createElement('div');
     el.style.cssText = 'font-size:12px;color:var(--text-secondary);padding:8px;text-align:center;';
-    el.textContent = state.allModels.length ? '没有匹配的模型' : '暂无模型';
+    el.textContent = state.allModels.length ? t('page.benchmark_v3.no_match', '没有匹配的模型') : t('page.benchmark_v3.no_models', '暂无模型');
     listEl.appendChild(el);
     updateModelsMeta(state, metaEl);
     return;
@@ -220,7 +240,7 @@ function renderServerModelList(state, listEl, metaEl) {
   if (!list.length) {
     const el = document.createElement('div');
     el.style.cssText = 'font-size:12px;color:var(--text-secondary);padding:8px;text-align:center;';
-    el.textContent = state.allModels.length ? '没有匹配的模型' : '暂无模型';
+    el.textContent = state.allModels.length ? t('page.benchmark_v3.no_match', '没有匹配的模型') : t('page.benchmark_v3.no_models', '暂无模型');
     listEl.appendChild(el);
     updateModelsMeta(state, metaEl);
     return;
@@ -236,20 +256,22 @@ function buildModelItem(m, state) {
   const nd = safeText(m && (m.nodeId || m.node)).trim();
   const isRemote = nd && nd !== 'local';
   const hue = getNodeColor(nd);
+  const key = modelLoadedKey(id, nd);
   const btn = document.createElement('button');
   btn.type = 'button'; btn.className = 'model-menu-item'; btn.dataset.modelId = id;
   if (isRemote) { btn.dataset.nodeId = nd; btn.style.borderLeft = '3px solid hsl(' + hue + ',65%,50%)'; }
-  if (state.loadedModelIds && state.loadedModelIds.has(id)) btn.classList.add('loaded');
+  if (state.loadedModelIds && state.loadedModelIds.has(key)) btn.classList.add('loaded');
   const n = document.createElement('div'); n.className = 'name';
   n.textContent = getModelDisplayName(m);
-  const t = document.createElement('div'); t.className = 'meta';
-  const statusText = state.loadedModelIds && state.loadedModelIds.has(id) ? '已加载' : '';
+  const loadedText = t('page.model.status.loaded', '已加载');
+  const metaEl = document.createElement('div'); metaEl.className = 'meta';
+  const statusText = state.loadedModelIds && state.loadedModelIds.has(key) ? loadedText : '';
   const parts = [];
   if (isRemote) parts.push(nodeBadgeHtml(nd, m.nodeName));
   if (statusText) parts.push(escapeHtml(statusText));
-  t.innerHTML = parts.join(' ');
+  metaEl.innerHTML = parts.join(' ');
   btn.appendChild(n);
-  if (parts.length) btn.appendChild(t);
+  if (parts.length) btn.appendChild(metaEl);
   if (m && m.size) {
     const s = document.createElement('div'); s.className = 'meta';
     s.style.color = 'var(--text-secondary)';
@@ -277,8 +299,8 @@ function populateNodeFilter(state, selectEl) {
   const prevVal = selectEl.value || '';
   selectEl.innerHTML = '';
   const opts = [
-    { value: 'all', text: '全部节点' },
-    { value: 'local', text: '本机' }
+    { value: 'all', text: t('page.model.filter.all', '全部节点') },
+    { value: 'local', text: t('page.model.filter.local', '本机') }
   ];
   const seenNodeIds = new Set();
   const all = Array.isArray(state.allModels) ? state.allModels : [];
@@ -303,8 +325,8 @@ function populateServerNodeFilter() {
   const prevVal = select.value || '';
   select.innerHTML = '';
   const opts = [
-    { value: 'all', text: '全部节点' },
-    { value: 'local', text: '本机' }
+    { value: 'all', text: t('page.model.filter.all', '全部节点') },
+    { value: 'local', text: t('page.model.filter.local', '本机') }
   ];
   const seenNodeIds = new Set();
   const benchModels = Array.isArray(bench.allModels) ? bench.allModels : [];
@@ -343,7 +365,7 @@ async function loadBenchAllModels() {
         const ld = await fetchJson('/api/models/loaded', { method: 'GET' });
         const models = Array.isArray(ld && ld.models) ? ld.models : [];
         bench.loadedModels = models;
-        bench.loadedModelIds = new Set(models.map(m => safeText(m && m.id).trim()).filter(Boolean));
+        bench.loadedModelIds = new Set(models.map(m => modelLoadedKey(safeText(m && m.id).trim(), m && m.nodeId)).filter(Boolean));
       } catch(e) { /* ignore */ }
     }
   } catch(e) { bench.allModels = []; }
@@ -459,7 +481,7 @@ function renderParamField(p) {
   const flagText = abbr || fullName;
   const flagHtml = ' <span style="font-weight:400;color:var(--text-secondary);font-size:12px;">' + escapeHtml(flagText) + '</span>';
   const labelContent = description
-    ? displayName + flagHtml + ' <i class="fas fa-question-circle" style="color:#DCDCDC;cursor:help;margin-left:4px;" title="' + escapeHtml(description) + '"></i>'
+    ? displayName + flagHtml + ' <i class="fas fa-question-circle param-desc-trigger" style="color:#DCDCDC;cursor:pointer;margin-left:4px;" title="' + escapeHtml(description) + '" data-param-name="' + escapeHtml(displayName) + '" data-param-flag="' + escapeHtml(flagText) + '" data-param-desc="' + escapeHtml(description) + '"></i>'
     : displayName + flagHtml;
 
   const labelHtml = '<div class="param-label-row" style="display:flex;align-items:center;gap:0.4rem;line-height:1.1;">' +
@@ -566,9 +588,9 @@ function updateBenchParamsCount() {
     total++;
     if (chk && chk.checked) enabled++;
   }
-  const text = '参数设置 (' + enabled + '/' + total + ')';
+  const text = t('page.benchmark_v3.params_count', '参数设置 ({enabled}/{total})').replace('{enabled}', enabled).replace('{total}', total);
   if (E.bench.paramsBtn) E.bench.paramsBtn.textContent = text;
-  if (E.bench.paramsModalStatus) E.bench.paramsModalStatus.textContent = '已设置 ' + enabled + ' / ' + total + ' 个参数';
+  if (E.bench.paramsModalStatus) E.bench.paramsModalStatus.textContent = t('page.benchmark_v3.params_set_count', '已设置 {enabled} / {total} 个参数').replace('{enabled}', enabled).replace('{total}', total);
 }
 function openBenchParamsModal() {
   if (!bench.paramConfig.length) { loadBenchParamConfigAndShow(); return; }
@@ -665,10 +687,10 @@ async function loadBenchParamsDevices() {
   if (!list) return;
   const llamaBinPath = (E.bench.llamaBinSelect && E.bench.llamaBinSelect.value || '').trim();
   if (!llamaBinPath) {
-    list.innerHTML = '<div class="device-placeholder">请先在主页面选择 llama.cpp 版本</div>';
+    list.innerHTML = '<div class="device-placeholder">' + escapeHtml(t('page.benchmark_v3.select_llamacpp_version', '请先在主页面选择 llama.cpp 版本')) + '</div>';
     return;
   }
-  list.innerHTML = '<div class="device-placeholder">加载中…</div>';
+  list.innerHTML = '<div class="device-placeholder">' + escapeHtml(t('common.loading', '加载中…')) + '</div>';
   try {
     const nodeId = effectiveNodeId(bench);
     const url = '/api/model/device/list?llamaBinPath=' + encodeURIComponent(llamaBinPath) + nodeQueryParam(nodeId);
@@ -677,11 +699,11 @@ async function loadBenchParamsDevices() {
       bench.devices = data.data.devices;
       renderBenchParamsDevices();
     } else {
-      list.innerHTML = '<div class="device-placeholder">获取设备列表失败</div>';
+      list.innerHTML = '<div class="device-placeholder">' + escapeHtml(t('common.devices_load_failed', '获取设备列表失败')) + '</div>';
       bench.devices = [];
     }
   } catch(e) {
-    list.innerHTML = '<div class="device-placeholder">获取设备列表失败</div>';
+    list.innerHTML = '<div class="device-placeholder">' + escapeHtml(t('common.devices_load_failed', '获取设备列表失败')) + '</div>';
     bench.devices = [];
   }
 }
@@ -694,7 +716,7 @@ function renderBenchParamsDevices() {
   if (!list) return;
   const devices = bench.devices;
   if (!devices.length) {
-    list.innerHTML = '<div class="device-placeholder">未发现可用设备</div>';
+    list.innerHTML = '<div class="device-placeholder">' + escapeHtml(t('common.no_devices', '未发现可用设备')) + '</div>';
     renderBenchMainGpuSelect();
     return;
   }
@@ -721,7 +743,7 @@ function renderBenchMainGpuSelect() {
   const prevVal = select.value;
   const devices = bench.devices;
   const checked = getCheckedDeviceIndices();
-  const options = ['<option value="-1">默认</option>'];
+  const options = ['<option value="-1">' + escapeHtml(t('common.default', '默认')) + '</option>'];
   if (Array.isArray(devices) && checked.length > 0) {
     for (let pos = 0; pos < checked.length; pos++) {
       const idx = checked[pos];
@@ -744,10 +766,10 @@ function getBenchMainGpu() {
 async function runBench() {
   if (bench.isRunning) { cancelBench(); return; }
   const modelId = (bench.selectedModelId || '').trim();
-  if (!modelId) { setBenchMeta('请选择模型', true); return; }
+  if (!modelId) { setBenchMeta(t('page.benchmark_v3.select_model', '请选择模型'), true); return; }
   bench.isRunning = true;
   bench.abortController = new AbortController();
-  E.bench.runBtn.textContent = '运行中…';
+  E.bench.runBtn.textContent = t('page.benchmark_v3.running', '运行中…');
   E.bench.runBtn.classList.add('btn-danger');
   try {
     const cmd = buildBenchCmd();
@@ -755,7 +777,7 @@ async function runBench() {
     const fullCmd = cmd + (devArg ? ' ' + devArg : '');
     let llamaBinPath = (E.bench.llamaBinSelect && E.bench.llamaBinSelect.value || '').trim();
     if (!llamaBinPath) {
-      const m = (Array.isArray(bench.allModels) ? bench.allModels : []).find(x => x.id === modelId);
+      const m = (Array.isArray(bench.allModels) ? bench.allModels : []).find(x => x.id === modelId && (!bench.selectedNodeId || bench.selectedNodeId === 'all' || (x.nodeId || 'local') === bench.selectedNodeId));
       if (m && m.llamaBinPath) llamaBinPath = m.llamaBinPath;
     }
     const payload = { modelId, cmd: fullCmd };
@@ -780,11 +802,11 @@ async function runBench() {
       setBenchMeta((data && data.error) || '失败');
     }
   } catch(e) {
-    if (e && e.name === 'AbortError') { setBenchMeta('已取消', true); }
-    else { setBenchMeta((e && e.message) || '请求失败'); }
+    if (e && e.name === 'AbortError') { setBenchMeta(t('page.benchmark_v3.cancelled', '已取消'), true); }
+    else { setBenchMeta((e && e.message) || t('common.request_failed', '请求失败')); }
   } finally {
     bench.isRunning = false; bench.abortController = null;
-    E.bench.runBtn.textContent = '运行';
+    E.bench.runBtn.textContent = t('page.benchmark_v3.run', '运行');
     E.bench.runBtn.classList.remove('btn-danger');
   }
 }
@@ -827,7 +849,7 @@ function renderBenchHistory() {
   if (E.bench.historyCount) E.bench.historyCount.textContent = bench.historyFiles.length + '';
   if (!bench.historyFiles.length) {
     const div = document.createElement('div'); div.className = 'history-empty';
-    div.textContent = bench.selectedModelId ? '暂无记录' : '请选择模型';
+    div.textContent = bench.selectedModelId ? t('page.benchmark_v3.no_records', '暂无记录') : t('page.benchmark_v3.select_model', '请选择模型');
     E.bench.historyList.appendChild(div);
     return;
   }
@@ -857,7 +879,7 @@ function renderBenchHistory() {
 }
 async function loadBenchHistoryFile(fileName) {
   if (!fileName) { bench.selectedFileData = null; showBenchOutput(); return; }
-  setBenchMeta('加载中…', true);
+  setBenchMeta(t('common.loading', '加载中…'), true);
   try {
     const nodeId = benchModelNodeId();
     const data = await fetchJson('/api/models/benchmark/get?fileName=' + encodeURIComponent(fileName) + nodeQueryParam(nodeId), { method: 'GET' });
@@ -875,7 +897,7 @@ async function loadBenchHistoryFile(fileName) {
 }
 function showBenchOutput() {
   const d = bench.selectedFileData;
-  if (E.bench.output) E.bench.output.textContent = d && d.rawOutput ? d.rawOutput : (bench.selectedFileName ? '(无输出)' : '暂无结果');
+  if (E.bench.output) E.bench.output.textContent = d && d.rawOutput ? d.rawOutput : (bench.selectedFileName ? t('page.benchmark_v3.no_output', '(无输出)') : t('page.benchmark_v3.no_results', '暂无结果'));
   if (E.bench.outputMeta) {
     const parts = [];
     if (d && d.fileName) parts.push('文件: ' + d.fileName);
@@ -888,7 +910,7 @@ function showBenchOutput() {
   if (E.bench.exportBtn) E.bench.exportBtn.disabled = !hasData;
 }
 async function deleteBenchHistoryFile(fileName) {
-  if (!fileName || !window.confirm('确定删除该测试记录吗？')) return;
+  if (!fileName || !window.confirm(t('page.benchmark_v3.confirm_delete', '确定删除该测试记录吗？'))) return;
   try {
     const nodeId = benchModelNodeId();
     const data = await fetchJson('/api/models/benchmark/delete?fileName=' + encodeURIComponent(fileName) + nodeQueryParam(nodeId), { method: 'POST' });
@@ -907,14 +929,14 @@ async function deleteBenchHistoryFile(fileName) {
 }
 function benchCopyOutput() {
   const text = E.bench.output ? E.bench.output.textContent : '';
-  if (!text || text === '暂无结果') return;
+  if (!text || text === t('page.benchmark_v3.no_results', '暂无结果')) return;
   navigator.clipboard.writeText(text).then(() => {
-    setBenchMeta('已复制到剪贴板', true);
-  }).catch(() => { setBenchMeta('复制失败'); });
+    setBenchMeta(t('common.link_copied_to_clipboard', '已复制到剪贴板'), true);
+  }).catch(() => { setBenchMeta(t('common.clipboard_write_failed', '复制失败')); });
 }
 function benchExportText() {
   const text = E.bench.output ? E.bench.output.textContent : '';
-  if (!text || text === '暂无结果') { setBenchMeta('没有可导出的数据', true); return; }
+  if (!text || text === t('page.benchmark_v3.no_results', '暂无结果')) { setBenchMeta(t('page.benchmark_v3.no_export_data', '没有可导出的数据'), true); return; }
   const fn = bench.selectedFileName || 'benchmark';
   const filename = fn.endsWith('.txt') ? fn : fn + '.txt';
   const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -943,8 +965,9 @@ function setBenchMeta(msg, isTransient) {
     E.bench.outputMeta.textContent = msg;
   }
 }
-function benchSelectModel(id) {
+function benchSelectModel(id, nodeId) {
   bench.selectedModelId = id;
+  bench.selectedNodeId = nodeId || '';
   bench.selectedFileName = '';
   bench.selectedFileData = null;
   updateActiveModelItem(bench, E.bench.modelList);
@@ -952,9 +975,9 @@ function benchSelectModel(id) {
   loadBenchLlamaCppPaths(nd);
   if (E.bench.selText) {
     E.bench.selText.style.display = id ? '' : 'none';
-    if (id) E.bench.selText.textContent = '模型：' + id;
+    if (id) E.bench.selText.textContent = t('page.benchmark_v3.model_prefix', '模型：') + id;
   }
-  if (E.bench.output) E.bench.output.textContent = '暂无结果';
+  if (E.bench.output) E.bench.output.textContent = t('page.benchmark_v3.no_results', '暂无结果');
   setBenchMeta('');
   loadBenchHistory();
 }
@@ -975,7 +998,7 @@ async function loadServerModels() {
       const ld = await fetchJson('/api/models/loaded', { method: 'GET' });
       const loaded = Array.isArray(ld && ld.models) ? ld.models : [];
       server.loadedModels = loaded;
-      server.loadedModelIds = new Set(loaded.map(m => safeText(m && m.id).trim()).filter(Boolean));
+      server.loadedModelIds = new Set(loaded.map(m => modelLoadedKey(safeText(m && m.id).trim(), m && m.nodeId)).filter(Boolean));
     } catch(e) { server.loadedModels = []; server.loadedModelIds = new Set(); }
   } catch(e) { server.loadedModels = []; server.loadedModelIds = new Set(); server.allModels = []; }
 }
@@ -992,15 +1015,16 @@ async function runServer() {
   const maxTokens = parseInt(E.server.maxTokens.value, 10);
   const concurrencyRaw = parseInt(E.server.concurrency.value, 10);
   const concurrency = Number.isFinite(concurrencyRaw) ? concurrencyRaw : NaN;
-  if (!modelId) { E.server.status.textContent = '请选择模型'; return; }
-  if (!server.loadedModelIds.has(modelId)) { E.server.status.textContent = '模型未加载'; return; }
-  if (!Number.isFinite(promptTokens) || promptTokens <= 0) { E.server.status.textContent = '提示词长度必须大于0'; return; }
-  if (!Number.isFinite(maxTokens) || maxTokens <= 0) { E.server.status.textContent = '输出最大token必须大于0'; return; }
-  if (!Number.isFinite(concurrency) || concurrency <= 0) { E.server.status.textContent = '并发次数必须大于0'; return; }
+  if (!modelId) { E.server.status.textContent = t('page.benchmark_v3.select_model', '请选择模型'); return; }
+  const nodeId = serverModelNodeId();
+  if (!server.loadedModelIds.has(modelLoadedKey(modelId, nodeId || 'local'))) { E.server.status.textContent = t('page.benchmark_v3.model_not_loaded', '模型未加载'); return; }
+  if (!Number.isFinite(promptTokens) || promptTokens <= 0) { E.server.status.textContent = t('page.benchmark_v3.validate.prompt_gt0', '提示词长度必须大于0'); return; }
+  if (!Number.isFinite(maxTokens) || maxTokens <= 0) { E.server.status.textContent = t('page.benchmark_v3.validate.max_tokens_gt0', '输出最大token必须大于0'); return; }
+  if (!Number.isFinite(concurrency) || concurrency <= 0) { E.server.status.textContent = t('page.benchmark_v3.validate.concurrency_gt0', '并发次数必须大于0'); return; }
   if (!validateServerTokens()) return;
   server.isRunning = true;
   server.abortController = new AbortController();
-  E.server.runBtn.textContent = '运行中…';
+  E.server.runBtn.textContent = t('page.benchmark_v3.running', '运行中…');
   E.server.runBtn.classList.add('btn-danger');
   try {
     const payload = { modelId, promptTokens, maxTokens };
@@ -1036,11 +1060,11 @@ async function runServer() {
       loadServerRecords('replace');
     }
   } catch(e) {
-    if (e && e.name === 'AbortError') { E.server.status.textContent = '已取消'; return; }
-    E.server.status.textContent = (e && e.message) || '请求失败';
+    if (e && e.name === 'AbortError') { E.server.status.textContent = t('page.benchmark_v3.cancelled', '已取消'); return; }
+    E.server.status.textContent = (e && e.message) || t('common.request_failed', '请求失败');
   } finally {
     server.isRunning = false; server.abortController = null;
-    E.server.runBtn.textContent = '运行';
+    E.server.runBtn.textContent = t('page.benchmark_v3.run', '运行');
     E.server.runBtn.classList.remove('btn-danger');
   }
 }
@@ -1105,13 +1129,13 @@ async function loadServerRecords(mode) {
     if (!data || data.success !== true) {
       if (mode === 'replace') { clearResultRows(E.server.resultBody, E.server.emptyRow); clearServerChart(); }
       const err = data && data.error ? data.error : '';
-      E.server.status.textContent = err === '文件不存在' ? '无任何测试记录' : (err || '暂无记录');
+      E.server.status.textContent = err === '文件不存在' ? t('page.benchmark_v3.no_records', '暂无记录') : (err || t('page.benchmark_v3.no_records', '暂无记录'));
       return;
     }
     const records = data && data.data && Array.isArray(data.data.records) ? data.data.records : [];
     if (!records.length) {
       if (mode === 'replace') { clearResultRows(E.server.resultBody, E.server.emptyRow); clearServerChart(); }
-      E.server.status.textContent = '暂无记录';
+      E.server.status.textContent = t('page.benchmark_v3.no_records', '暂无记录');
       return;
     }
     const sorted = records.slice().sort((a, b) => String(b && b.timestamp).localeCompare(String(a && a.timestamp)));
@@ -1133,21 +1157,22 @@ async function loadServerRecords(mode) {
     E.server.status.textContent = e.message || '记录加载失败';
   }
 }
-function serverSelectModel(id) {
+function serverSelectModel(id, nodeId) {
   server.selectedModelId = id;
+  server.selectedNodeId = nodeId || '';
   updateActiveModelItem(server, E.server.modelList);
-  const isLoaded = id && server.loadedModelIds.has(id);
+  const isLoaded = id && server.loadedModelIds.has(modelLoadedKey(id, nodeId));
   E.server.runBtn.disabled = !isLoaded;
-  E.server.runBtn.title = isLoaded ? '' : '模型未加载，无法运行测试';
+  E.server.runBtn.title = isLoaded ? '' : t('page.benchmark_v3.cannot_run', '模型未加载，无法运行测试');
   const nd = serverModelNodeId();
   E.server.selText.style.display = id ? '' : 'none';
-  if (id) E.server.selText.textContent = '模型：' + id;
+  if (id) E.server.selText.textContent = t('page.benchmark_v3.model_prefix', '模型：') + id;
   loadServerRecords('replace');
 }
 function cancelServer() {
   if (!server.isRunning) return;
   if (server.abortController) server.abortController.abort();
-  E.server.runBtn.textContent = '取消中…';
+  E.server.runBtn.textContent = t('page.benchmark_v3.cancelling', '取消中…');
 }
 async function deleteServerRecord(record, btn) {
   const modelId = safeText(record.modelId || server.selectedModelId).trim();
@@ -1172,7 +1197,7 @@ async function deleteServerRecord(record, btn) {
 }
 function serverExport(format) {
   const records = server.records.filter(r => !r.isStats);
-  if (!records.length) { E.server.status.textContent = '没有可导出的数据'; return; }
+  if (!records.length) { E.server.status.textContent = t('page.benchmark_v3.no_export_data', '没有可导出的数据'); return; }
   doExport(records, format, server.selectedModelId || 'server', E.server.status);
 }
 
@@ -1343,7 +1368,7 @@ function doExport(records, format, modelId, statusEl) {
   });
   let content = '';
   if (format === 'csv') {
-    const header = '时间,模型,提示词长度,预填充速度(token/s),输出长度,输出速度(token/s),CPU/RAM,GPU,CMD,路径';
+    const header = t('page.benchmark_v3.csv_header', '时间,模型,提示词长度,预填充速度(token/s),输出长度,输出速度(token/s),CPU/RAM,GPU,CMD,路径');
     const rows = data.map(r => [r.timestamp, r.modelId, r.promptTokens, formatNumber(r.prefillSpeed), r.maxTokens, formatNumber(r.decodeSpeed),
       (() => { const c = safeText(r.cpu); const ra = safeText(r.ram); if (c && ra) return c + ' / ' + ra + 'GB'; return c || (ra ? ra + 'GB' : ''); })(),
       Array.isArray(r.devices) ? r.devices.join(' | ') : safeText(r.devices),
@@ -1353,7 +1378,7 @@ function doExport(records, format, modelId, statusEl) {
   } else if (format === 'json') {
     content = JSON.stringify(data, null, 2);
   } else if (format === 'md') {
-    const lines = ['# Benchmark 测试结果', '', '| 时间 | 模型 | 提示词长度 | 预填充速度 | 输出长度 | 输出速度 |', '|------|------|-----------|-----------|---------|---------|'];
+    const lines = [t('page.benchmark_v3.md_title', '# Benchmark 测试结果'), '', t('page.benchmark_v3.md_header', '| 时间 | 模型 | 提示词长度 | 预填充速度 | 输出长度 | 输出速度 |'), '|------|------|-----------|-----------|---------|---------|'];
     data.forEach(r => {
       lines.push('| ' + [r.timestamp, r.modelId, r.promptTokens, formatNumber(r.prefillSpeed), r.maxTokens, formatNumber(r.decodeSpeed)].join(' | ') + ' |');
     });
@@ -1369,21 +1394,21 @@ function doExport(records, format, modelId, statusEl) {
 function cancelBench() {
   if (!bench.isRunning) return;
   if (bench.abortController) bench.abortController.abort();
-  E.bench.runBtn.textContent = '取消中…';
+  E.bench.runBtn.textContent = t('page.benchmark_v3.cancelling', '取消中…');
 }
 
 // == Event listeners ==
 // llama-bench
 E.bench.runBtn.addEventListener('click', runBench);
 E.bench.modelList.addEventListener('click', e => {
-  const t = e.target.closest('button[data-model-id]'); if (t) benchSelectModel(t.dataset.modelId);
+  const t = e.target.closest('button[data-model-id]'); if (t) benchSelectModel(t.dataset.modelId, t.dataset.nodeId);
 });
 E.bench.searchInput.addEventListener('input', e => { bench.filterText = (e.target.value || '').trim(); renderBenchModelList(bench, E.bench.modelList, E.bench.modelsMeta); });
 E.bench.nodeFilter.addEventListener('change', () => {
   bench.selectedNodeId = E.bench.nodeFilter.value;
   loadBenchLlamaCppPaths(effectiveNodeId(bench));
   renderBenchModelList(bench, E.bench.modelList, E.bench.modelsMeta);
-  if (bench.selectedModelId) { benchSelectModel(bench.selectedModelId); }
+  if (bench.selectedModelId) { benchSelectModel(bench.selectedModelId, bench.selectedNodeId); }
 });
 if (E.bench.copyBtn) E.bench.copyBtn.addEventListener('click', benchCopyOutput);
 if (E.bench.exportBtn) E.bench.exportBtn.addEventListener('click', benchExportText);
@@ -1401,11 +1426,11 @@ E.server.searchInput.addEventListener('input', e => { server.filterText = (e.tar
 E.server.nodeFilter.addEventListener('change', () => {
   server.selectedNodeId = E.server.nodeFilter.value;
   renderServerModelList(server, E.server.modelList, E.server.modelsMeta);
-  if (server.selectedModelId) { serverSelectModel(server.selectedModelId); }
+  if (server.selectedModelId) { serverSelectModel(server.selectedModelId, server.selectedNodeId); }
 });
 E.server.modelList.addEventListener('click', e => {
   const t = e.target.closest('button[data-model-id]'); if (t) {
-    serverSelectModel(t.dataset.modelId);
+    serverSelectModel(t.dataset.modelId, t.dataset.nodeId);
   }
 });
 E.server.exportBtns.forEach(btn => {

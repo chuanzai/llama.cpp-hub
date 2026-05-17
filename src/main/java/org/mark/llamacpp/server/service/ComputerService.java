@@ -6,7 +6,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 
 /**
- * 用来获取一些硬件信息，用来记录到benchmark v2的结果里。
+ * 用来获取一些硬件信息，用来记录到benchmark v2的结果里。目前是一个意义不明的实现，以后可以被优化。
  */
 public class ComputerService {
 	

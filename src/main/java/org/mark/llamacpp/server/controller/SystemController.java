@@ -16,15 +16,19 @@ import java.util.stream.Stream;
 
 import org.mark.llamacpp.lmstudio.LMStudio;
 import org.mark.llamacpp.ollama.Ollama;
+import org.mark.llamacpp.server.BuildInfo;
 import org.mark.llamacpp.server.LlamaServer;
 import org.mark.llamacpp.server.LlamaServerManager;
 import org.mark.llamacpp.server.NodeManager;
 import org.mark.llamacpp.server.exception.RequestMethodException;
 import org.mark.llamacpp.server.service.GpuService;
 import org.mark.llamacpp.server.service.ModelSamplingService;
+import org.mark.llamacpp.server.tools.FastFetchHelper;
 import org.mark.llamacpp.server.struct.ApiResponse;
 import org.mark.llamacpp.server.tools.JsonUtil;
 import org.mark.llamacpp.server.tools.ParamTool;
+import org.mark.llamacpp.update.GitHubTagFetcherNative;
+import org.mark.llamacpp.update.LetsUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +48,18 @@ import io.netty.util.CharsetUtil;
 public class SystemController implements BaseController {
 
 	private static final Logger logger = LoggerFactory.getLogger(SystemController.class);
+
+	// i18n keys — returned to frontend for translation
+	private static final String I18N_METHOD_GET_ONLY = "common.method.get.only";
+	private static final String I18N_METHOD_POST_ONLY = "common.method.post.only";
+	private static final String I18N_NOT_OFFICIAL_BUILD = "update.not.official.build";
+	private static final String I18N_URL_MISSING = "update.url.missing";
+	private static final String I18N_GITHUB_ONLY = "update.github.only";
+	private static final String I18N_DOWNLOAD_FAILED = "update.download.failed";
+	private static final String I18N_CHECK_FAILED = "update.check.failed";
+	private static final String I18N_APPLY_FAILED = "update.apply.failed";
+	private static final String I18N_STATUS_FAILED = "update.status.failed";
+	private static final String I18N_CANCEL_FAILED = "update.cancel.failed";
 	
 	/**
 	 * 	依旧请求入口。
@@ -164,7 +180,38 @@ public class SystemController implements BaseController {
 			return true;
 		}
 		
-		
+		// 检查更新
+		if (uri.startsWith("/api/sys/update/check")) {
+			this.handleUpdateCheckRequest(ctx, request);
+			return true;
+		}
+		// 下载更新
+		if (uri.startsWith("/api/sys/update/download")) {
+			this.handleUpdateDownloadRequest(ctx, request);
+			return true;
+		}
+		// 应用更新
+		if (uri.startsWith("/api/sys/update/apply")) {
+			this.handleUpdateApplyRequest(ctx, request);
+			return true;
+		}
+		// 更新状态查询
+		if (uri.startsWith("/api/sys/update/status")) {
+			this.handleUpdateStatusRequest(ctx, request);
+			return true;
+		}
+		// 取消下载
+		if (uri.startsWith("/api/sys/update/cancel")) {
+			this.handleUpdateCancelRequest(ctx, request);
+			return true;
+		}
+
+		// 获取计算机信息（fastfetch）
+		if (uri.startsWith("/api/sys/fastfetch")) {
+			this.handleFastFetchRequest(ctx, request);
+			return true;
+		}
+
 		return false;
 	}
 	
@@ -363,6 +410,23 @@ public class SystemController implements BaseController {
 		}
 		this.assertRequestMethod(request.method() != HttpMethod.GET, "只支持GET请求");
 		try {
+			Map<String, String> params = ParamTool.getQueryParam(request.uri());
+			String nodeId = params.get("nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
+						nodeId, "GET", "api/sys/gpu/status", null);
+				if (result.isSuccess()) {
+					JsonObject remoteResp = JsonUtil.fromJson(result.getBody(), JsonObject.class);
+					if (remoteResp != null && remoteResp.has("data")) {
+						LlamaServer.sendJsonResponse(ctx, ApiResponse.success(remoteResp.get("data")));
+					} else {
+						LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点响应格式错误"));
+					}
+				} else {
+					LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+				}
+				return;
+			}
 			JsonObject status = GpuService.getInstance().queryGpuStatus();
 			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(status));
 		} catch (Exception e) {
@@ -878,6 +942,19 @@ public class SystemController implements BaseController {
 				return;
 			}
 
+			String nodeId = JsonUtil.getJsonString(obj, "nodeId", "");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				obj.remove("nodeId");
+				NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
+						nodeId, "POST", "api/sys/model/sampling/setting/set", obj);
+				if (result.isSuccess()) {
+					NodeManager.writeHttpResultToChannel(ctx, result, "[采样配置远程]");
+				} else {
+					LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+				}
+				return;
+			}
+
 			String modelId = JsonUtil.getJsonString(obj, "modelId", null);
 			modelId = modelId == null ? "" : modelId.trim();
 			if (modelId.isEmpty()) {
@@ -934,6 +1011,20 @@ public class SystemController implements BaseController {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("缺少modelId参数"));
 				return;
 			}
+			
+			String nodeId = params.get("nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				String path = "api/sys/model/sampling/setting/get?modelId=" + java.net.URLEncoder.encode(modelId, "UTF-8");
+				NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
+						nodeId, "GET", path, null);
+				if (result.isSuccess()) {
+					NodeManager.writeHttpResultToChannel(ctx, result, "[采样配置远程]");
+				} else {
+					LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+				}
+				return;
+			}
+			
 			Path configPath = Paths.get("config", "model-sampling-settings.json");
 			String samplingConfigName = "";
 			if (Files.exists(configPath)) {
@@ -963,6 +1054,18 @@ public class SystemController implements BaseController {
 		}
 		this.assertRequestMethod(request.method() != HttpMethod.GET, "只支持GET请求");
 		try {
+			Map<String, String> params = ParamTool.getQueryParam(request.uri());
+			String nodeId = params.get("nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
+						nodeId, "GET", "api/sys/model/sampling/setting/list", null);
+				if (result.isSuccess()) {
+					NodeManager.writeHttpResultToChannel(ctx, result, "[采样配置远程]");
+				} else {
+					LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+				}
+				return;
+			}
 			Map<String, Object> data = ModelSamplingService.getInstance().listSamplingSettings();
 			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
 		} catch (Exception e) {
@@ -982,6 +1085,20 @@ public class SystemController implements BaseController {
 			if (obj == null) {
 				return;
 			}
+
+			String nodeId = JsonUtil.getJsonString(obj, "nodeId", "");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				obj.remove("nodeId");
+				NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
+						nodeId, "POST", "api/sys/model/sampling/setting/add", obj);
+				if (result.isSuccess()) {
+					NodeManager.writeHttpResultToChannel(ctx, result, "[采样配置远程]");
+				} else {
+					LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+				}
+				return;
+			}
+
 			String samplingConfigName = JsonUtil.getJsonStringAny(obj, "", "samplingConfigName", "configName");
 			if (samplingConfigName.isEmpty()) {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("缺少samplingConfigName参数"));
@@ -1021,6 +1138,20 @@ public class SystemController implements BaseController {
 			if (obj == null) {
 				return;
 			}
+
+			String nodeId = JsonUtil.getJsonString(obj, "nodeId", "");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				obj.remove("nodeId");
+				NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
+						nodeId, "POST", "api/sys/model/sampling/setting/delete", obj);
+				if (result.isSuccess()) {
+					NodeManager.writeHttpResultToChannel(ctx, result, "[采样配置远程]");
+				} else {
+					LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+				}
+				return;
+			}
+
 			String samplingConfigName = JsonUtil.getJsonStringAny(obj, "", "samplingConfigName", "configName");
 			if (samplingConfigName.isEmpty()) {
 				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("缺少samplingConfigName参数"));
@@ -1112,6 +1243,264 @@ public class SystemController implements BaseController {
 	}
 	
 	
+	
+	/**
+	 * 	检查更新
+	 */
+	private void handleUpdateCheckRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
+		if (request.method() == HttpMethod.OPTIONS) {
+			LlamaServer.sendCorsResponse(ctx);
+			return;
+		}
+		this.assertRequestMethod(request.method() != HttpMethod.GET, I18N_METHOD_GET_ONLY);
+		try {
+			GitHubTagFetcherNative fetcher = new GitHubTagFetcherNative();
+			GitHubTagFetcherNative.CheckResult result = fetcher.check();
+
+			Map<String, Object> data = new HashMap<>();
+			data.put("currentTag", GitHubTagFetcherNative.getCurrentTag());
+			data.put("hasUpdate", result.isHasUpdate());
+			if (result.isSuccess() && result.getRelease() != null) {
+				data.put("release", result.getRelease());
+			}
+			if (!result.isSuccess()) {
+				data.put("error", result.getError());
+			}
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
+		} catch (Exception e) {
+			logger.info("检查更新时发生错误", e);
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_CHECK_FAILED));
+		}
+	}
+	
+	/**
+	 * 下载更新包
+	 */
+	private void handleUpdateDownloadRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
+		if (request.method() == HttpMethod.OPTIONS) {
+			LlamaServer.sendCorsResponse(ctx);
+			return;
+		}
+		this.assertRequestMethod(request.method() != HttpMethod.POST, I18N_METHOD_POST_ONLY);
+		try {
+			if (!isOfficialBuild()) {
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_NOT_OFFICIAL_BUILD));
+				return;
+			}
+			JsonObject obj = parseJsonBody(ctx, request);
+			if (obj == null) {
+				return;
+			}
+			String url = JsonUtil.getJsonString(obj, "url", null);
+			String version = JsonUtil.getJsonString(obj, "version", null);
+			if (url == null || url.trim().isEmpty()) {
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_URL_MISSING));
+				return;
+			}
+			if (!isGitHubReleaseUrl(url.trim())) {
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_GITHUB_ONLY));
+				return;
+			}
+			Map<String, Object> data = LetsUpdate.getInstance().download(url.trim(), version);
+			boolean success = (Boolean) data.getOrDefault("success", false);
+			if (success) {
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
+			} else {
+				String error = (String) data.getOrDefault("error", I18N_DOWNLOAD_FAILED);
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.error(error));
+			}
+		} catch (Exception e) {
+			logger.info("下载更新包时发生错误", e);
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_DOWNLOAD_FAILED));
+		}
+	}
+
+	/**
+	 *  简单校验 URL 是否为 GitHub Release 资源下载链接。<br>
+	 * 	https://github.com/IIIIIllllIIIIIlllll/llama.cpp-hub/releases/download/
+	 */
+	private boolean isGitHubReleaseUrl(String url) {
+		return url.contains("://github.com");
+	}
+
+	/**
+	 * 应用更新包
+	 */
+	private void handleUpdateApplyRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
+		if (request.method() == HttpMethod.OPTIONS) {
+			LlamaServer.sendCorsResponse(ctx);
+			return;
+		}
+		this.assertRequestMethod(request.method() != HttpMethod.POST, I18N_METHOD_POST_ONLY);
+		try {
+			if (!isOfficialBuild()) {
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_NOT_OFFICIAL_BUILD));
+				return;
+			}
+			File zip = new File(System.getProperty("user.dir"), "cache" + File.separator + "update.zip");
+			Map<String, Object> data = LetsUpdate.getInstance().doUpdate(zip);
+			boolean success = (Boolean) data.getOrDefault("success", false);
+			if (success) {
+				String message = (String) data.getOrDefault("message", LetsUpdate.I18N_APPLY_SUCCESS);
+				Map<String, Object> respData = new HashMap<>();
+				respData.put("success", true);
+				respData.put("message", message);
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.success(respData));
+			} else {
+				String error = (String) data.getOrDefault("error", I18N_APPLY_FAILED);
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.error(error));
+			}
+		} catch (Exception e) {
+			logger.info("应用更新包时发生错误", e);
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_APPLY_FAILED));
+		}
+	}
+
+	/**
+	 * 更新状态查询
+	 */
+		private void handleUpdateStatusRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
+		if (request.method() == HttpMethod.OPTIONS) {
+			LlamaServer.sendCorsResponse(ctx);
+			return;
+		}
+		this.assertRequestMethod(request.method() != HttpMethod.GET, I18N_METHOD_GET_ONLY);
+		try {
+			LetsUpdate updater = LetsUpdate.getInstance();
+			LetsUpdate.UpdateStatus status = updater.getStatus();
+
+			Path zipPath = Paths.get(System.getProperty("user.dir")).resolve("cache" + File.separator + "update.zip");
+			boolean zipExists = Files.exists(zipPath);
+			long zipSize = zipExists ? Files.size(zipPath) : 0L;
+
+			Map<String, Object> data = new HashMap<>();
+			data.put("status", status.getLabel());
+			data.put("currentVersion", BuildInfo.getTag());
+			data.put("zipDownloaded", zipExists);
+			data.put("zipSize", zipSize);
+			data.put("pendingVersion", updater.getPendingVersion());
+			data.put("downloadedBytes", updater.getDownloadedBytes());
+			data.put("totalBytes", updater.getTotalBytes());
+			data.put("progressRatio", updater.getProgressRatio());
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
+		} catch (Exception e) {
+			logger.info("查询更新状态时发生错误", e);
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_STATUS_FAILED));
+		}
+	}
+
+	/**
+	 * 判断是否为官方发行版本（BuildInfo 占位符已被替换）。
+	 */
+	private boolean isOfficialBuild() {
+		String tag = BuildInfo.getTag();
+		return tag != null && !tag.isEmpty() && !"{tag}".equals(tag);
+	}
+
+	/**
+	 * 取消下载
+	 */
+	private void handleUpdateCancelRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
+		if (request.method() == HttpMethod.OPTIONS) {
+			LlamaServer.sendCorsResponse(ctx);
+			return;
+		}
+		this.assertRequestMethod(request.method() != HttpMethod.POST, I18N_METHOD_POST_ONLY);
+		try {
+			Map<String, Object> data = LetsUpdate.getInstance().cancelDownload();
+			boolean success = (Boolean) data.getOrDefault("success", false);
+			if (success) {
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
+			} else {
+				String error = (String) data.getOrDefault("error", I18N_CANCEL_FAILED);
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.error(error));
+			}
+		} catch (Exception e) {
+			logger.info("取消更新下载时发生错误", e);
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error(I18N_CANCEL_FAILED));
+		}
+	}
+
+	/**
+	 * 	获取计算机信息（通过 fastfetch）
+	 */
+	private void handleFastFetchRequest(ChannelHandlerContext ctx, FullHttpRequest request) throws RequestMethodException {
+		if (request.method() == HttpMethod.OPTIONS) {
+			LlamaServer.sendCorsResponse(ctx);
+			return;
+		}
+		this.assertRequestMethod(request.method() != HttpMethod.GET, "只支持GET请求");
+		try {
+			Map<String, String> params = ParamTool.getQueryParam(request.uri());
+			String nodeId = params.get("nodeId");
+			if (nodeId != null && !nodeId.isBlank() && !"local".equals(nodeId)) {
+				NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(
+						nodeId, "GET", "api/sys/fastfetch", null);
+				if (result.isSuccess()) {
+					JsonObject remoteResp = JsonUtil.fromJson(result.getBody(), JsonObject.class);
+					if (remoteResp != null && remoteResp.has("data")) {
+						LlamaServer.sendJsonResponse(ctx, ApiResponse.success(remoteResp.get("data")));
+					} else {
+						LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点响应格式错误"));
+					}
+				} else {
+					LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+				}
+				return;
+			}
+			FastFetchHelper helper = FastFetchHelper.getInstance();
+			String initErr = helper.init();
+			FastFetchHelper.ComputerInfo cinfo = helper.getInfo();
+
+			Map<String, Object> data = new HashMap<>();
+			data.put("available", helper.isAvailable());
+			data.put("error", initErr != null ? initErr : cinfo.getError());
+			data.put("cpuModel", cinfo.getCpuModel());
+			data.put("cpuTemperature", cinfo.getCpuTemperature());
+			data.put("physicalCores", cinfo.getPhysicalCores());
+			data.put("logicalCores", cinfo.getLogicalCores());
+			data.put("memoryBytes", cinfo.getMemoryBytes());
+			data.put("memoryKB", cinfo.getMemoryKB());
+			data.put("rawOutput", cinfo.getRawOutput());
+
+			List<Map<String, Object>> gpuList = new ArrayList<>();
+			for (FastFetchHelper.GpuInfo gpu : cinfo.getGpus()) {
+				Map<String, Object> gpuMap = new HashMap<>();
+				gpuMap.put("name", gpu.getName());
+				gpuMap.put("vendor", gpu.getVendor());
+				gpuMap.put("type", gpu.getType());
+				gpuMap.put("driver", gpu.getDriver());
+				gpuMap.put("frequency", gpu.getFrequency());
+				gpuMap.put("temperature", gpu.getTemperature());
+				gpuMap.put("coreCount", gpu.getCoreCount());
+				gpuMap.put("coreUsage", gpu.getCoreUsage());
+				gpuMap.put("deviceId", gpu.getDeviceId());
+				gpuMap.put("index", gpu.getIndex());
+				gpuMap.put("dedicatedMemoryBytes", gpu.getDedicatedMemoryBytes());
+				gpuMap.put("dedicatedMemoryUsed", gpu.getDedicatedMemoryUsed());
+				gpuMap.put("sharedMemoryBytes", gpu.getSharedMemoryBytes());
+				gpuMap.put("sharedMemoryUsed", gpu.getSharedMemoryUsed());
+				gpuList.add(gpuMap);
+			}
+			data.put("gpus", gpuList);
+
+			List<Map<String, Object>> batteryList = new ArrayList<>();
+			for (FastFetchHelper.BatteryInfo bat : cinfo.getBatteries()) {
+				Map<String, Object> batMap = new HashMap<>();
+				batMap.put("name", bat.getName());
+				batMap.put("temperature", bat.getTemperature());
+				batMap.put("capacity", bat.getCapacity());
+				batteryList.add(batMap);
+			}
+			data.put("batteries", batteryList);
+
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
+		} catch (Exception e) {
+			logger.info("获取计算机信息时发生错误", e);
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("获取计算机信息失败: " + e.getMessage()));
+		}
+	}
+
 	/**
 	 * 处理停止服务请求
 	 * 

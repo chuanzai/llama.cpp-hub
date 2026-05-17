@@ -598,6 +598,9 @@
       }
       mathJaxLoading = true;
       window.MathJax = window.MathJax || {};
+      window.MathJax.startup = {
+        typeset: false
+      };
       window.MathJax.tex = {
         inlineMath: [['$', '$'], ['\\(', '\\)']],
         displayMath: [['$$', '$$'], ['\\[', '\\]']],
@@ -938,7 +941,7 @@
       const protectedMath = protectMathSegments(source);
       let rendered = '';
       try {
-        rendered = window.marked.parse(fixEmphasisSpacing(protectedMath.text), {
+        rendered = window.marked.parse(/*fixEmphasisSpacing*/(protectedMath.text), {
           gfm: true,
           breaks: true,
           mangle: false,
@@ -950,50 +953,98 @@
       return restoreMathTokens(rendered, protectedMath.math);
     }
 
-    function renderRichText(target, text, options = {}) {
-      if (!target) {
+      function renderRichText(target, text, options = {}) {
+        if (!target) {
+          return;
+        }
+        const source = String(text ?? '');
+        const isStreaming = !!options.isStreaming;
+        const isUser = String(options.role).toLowerCase() === 'user';
+       if (isStreaming || isUser) {
+         target.innerHTML = escapeHtml(source).replace(/\n/g, '<br>');
+       } else {
+         target.innerHTML = renderMarkdown(source);
+       }
+       if (!isStreaming && !isUser && window.hljs && typeof window.hljs.highlightElement === 'function' && (source.includes('```') || source.includes('`'))) {
+         const blocks = target.querySelectorAll('pre code');
+         for (const block of blocks) {
+           window.hljs.highlightElement(block);
+         }
+       }
+       if (!isStreaming && !isUser) {
+         const pres = target.querySelectorAll('pre');
+         for (const pre of pres) {
+           if (pre.querySelector('.code-copy-btn')) continue;
+           const btn = document.createElement('button');
+           btn.type = 'button';
+           btn.className = 'code-copy-btn';
+           btn.setAttribute('aria-label', '复制代码');
+           btn.title = '复制代码';
+           btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
+            btn.addEventListener('click', () => {
+              const code = pre.querySelector('code');
+              const text = (code ? code.textContent : pre.textContent) || '';
+              if (!text.trim()) return;
+              (async () => {
+                try {
+                  if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                  } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    const ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    if (!ok) throw new Error('execCommand failed');
+                  }
+                  btn.classList.add('copied');
+                  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>';
+                  setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
+                  }, 1500);
+                } catch (e) {
+                  showToast('error', '复制失败，请手动复制');
+                }
+              })();
+            });
+           pre.appendChild(btn);
+         }
+       }
+       if (!isStreaming && !isUser && /[\\$]/.test(source)) {
+         requestMathTypeset(target);
+       }
+     }
+
+    // ── Streaming Text Render（增量追加 TextNode，避免每 token innerHTML 全量替换）──
+    const streamingTextCache = new WeakMap();
+
+    function appendStreamingText(target, fullText) {
+      if (!target) return;
+      const existingTextNode = streamingTextCache.get(target);
+      if (!existingTextNode) {
+        target.innerHTML = '';
+        target.style.whiteSpace = 'pre-wrap';
+        target.style.wordBreak = 'break-word';
+        const textNode = document.createTextNode(fullText);
+        target.appendChild(textNode);
+        streamingTextCache.set(target, textNode);
         return;
       }
-      const source = String(text ?? '');
-      const isStreaming = !!options.isStreaming;
-      if (isStreaming) {
-        target.innerHTML = escapeHtml(source).replace(/\n/g, '<br>');
-      } else {
-        target.innerHTML = renderMarkdown(source);
+      const currentLen = existingTextNode.textContent.length;
+      if (fullText.length > currentLen) {
+        existingTextNode.appendData(fullText.slice(currentLen));
       }
-      if (!isStreaming && window.hljs && typeof window.hljs.highlightElement === 'function' && (source.includes('```') || source.includes('`'))) {
-        const blocks = target.querySelectorAll('pre code');
-        for (const block of blocks) {
-          window.hljs.highlightElement(block);
-        }
-      }
-      if (!isStreaming) {
-        const pres = target.querySelectorAll('pre');
-        for (const pre of pres) {
-          if (pre.querySelector('.code-copy-btn')) continue;
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'code-copy-btn';
-          btn.setAttribute('aria-label', '复制代码');
-          btn.title = '复制代码';
-          btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
-          btn.addEventListener('click', () => {
-            const code = pre.querySelector('code');
-            const text = code ? code.textContent : pre.textContent;
-            navigator.clipboard.writeText(text).then(() => {
-              btn.classList.add('copied');
-              btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>';
-              setTimeout(() => {
-                btn.classList.remove('copied');
-                btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
-              }, 1500);
-            });
-          });
-          pre.appendChild(btn);
-        }
-      }
-      if (!isStreaming && /[\\$]/.test(source)) {
-        requestMathTypeset(target);
+    }
+
+    function clearStreamingCache(target) {
+      if (target) {
+        streamingTextCache.delete(target);
+        target.style.removeProperty('white-space');
+        target.style.removeProperty('word-break');
       }
     }
 
@@ -3036,7 +3087,11 @@
 
         const reasoningBody = document.createElement('div');
         reasoningBody.className = 'reasoning-body' + (message.reasoningCollapsed ? ' hidden' : '');
-        renderRichText(reasoningBody, message.reasoning, { isStreaming: !!message.isStreaming });
+        if (message.isStreaming) {
+          appendStreamingText(reasoningBody, message.reasoning || '');
+        } else {
+          renderRichText(reasoningBody, message.reasoning, { isStreaming: false });
+        }
 
         reasoningHead.appendChild(reasoningMeta);
         reasoningHead.appendChild(reasoningCaret);
@@ -3197,7 +3252,11 @@
         if (String(message.content || '').trim() && message.role !== 'tool') {
           const content = document.createElement('div');
           content.className = 'message-content';
-          renderRichText(content, message.content || '', { isStreaming: !!message.isStreaming });
+          if (message.isStreaming) {
+            appendStreamingText(content, message.content || '');
+          } else {
+            renderRichText(content, message.content || '', { isStreaming: false, role: message.role });
+          }
           bubble.appendChild(content);
         }
 
@@ -3421,7 +3480,12 @@
         reasoningState.textContent = message.reasoningCollapsed ? '点击展开' : '点击收起';
         reasoningBody.classList.toggle('hidden', !!message.reasoningCollapsed);
         if (!message.reasoningCollapsed) {
-          renderRichText(reasoningBody, message.reasoning, { isStreaming: !!message.isStreaming });
+          if (message.isStreaming) {
+            appendStreamingText(reasoningBody, message.reasoning || '');
+          } else {
+            clearStreamingCache(reasoningBody);
+            renderRichText(reasoningBody, message.reasoning, { isStreaming: false, role: message.role });
+          }
         }
       } else if (reasoningBox) {
         reasoningBox.remove();
@@ -3434,7 +3498,12 @@
           contentDiv.className = 'message-content';
           bubble.appendChild(contentDiv);
         }
-        renderRichText(contentDiv, message.content || '', { isStreaming: !!message.isStreaming });
+        if (message.isStreaming) {
+          appendStreamingText(contentDiv, message.content || '');
+        } else {
+          clearStreamingCache(contentDiv);
+          renderRichText(contentDiv, message.content || '', { isStreaming: false, role: message.role });
+        }
       } else if (contentDiv) {
         contentDiv.remove();
       }
@@ -3577,7 +3646,9 @@
         if (!updated) {
           renderMessages();
         } else {
-          updateMessageActionStates();
+          if (!message.isStreaming) {
+            updateMessageActionStates();
+          }
           scrollChatToBottom();
         }
       } else {

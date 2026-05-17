@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 
+import org.mark.llamacpp.gguf.MtpHelper.MtpInfo;
+
 /**
  * GGUF元数据读取器 (简化版)
  * 只保留 fileName, filePath, general.architecture, context_length
@@ -46,8 +48,11 @@ public class GGUFMetaData {
     private final boolean supportsAudio;
 
     private final boolean supportsVision;
+    
+    
+    private final MtpInfo mtpInfo;
 
-    private GGUFMetaData(String fileName, String filePath, String architecture, Integer contextLength, Integer fileType, String baseName, String name, String sizeLabel, boolean supportsAudio, boolean supportsVision) {
+    private GGUFMetaData(String fileName, String filePath, String architecture, Integer contextLength, Integer fileType, String baseName, String name, String sizeLabel, boolean supportsAudio, boolean supportsVision, MtpInfo mtpInfo) {
         this.fileName = fileName;
         this.filePath = filePath;
         this.architecture = architecture;
@@ -58,6 +63,7 @@ public class GGUFMetaData {
         this.sizeLabel = sizeLabel;
         this.supportsAudio = supportsAudio;
         this.supportsVision = supportsVision;
+        this.mtpInfo = mtpInfo;
     }
 
     public static GGUFMetaData readFile(File file) {
@@ -154,7 +160,7 @@ public class GGUFMetaData {
             return null;
         }
 
-        return new GGUFMetaData(file.getName(), file.getAbsolutePath(), architecture, contextLength, fileType, baseName, name, sizeLabel, supportsAudio, supportsVision);
+        return new GGUFMetaData(file.getName(), file.getAbsolutePath(), architecture, contextLength, fileType, baseName, name, sizeLabel, supportsAudio, supportsVision, MtpHelper.detectMtpInfo(file));
     }
 
     public String getFileName() {
@@ -195,6 +201,10 @@ public class GGUFMetaData {
 
     public boolean isSupportsVision() {
         return supportsVision;
+    }
+
+    public MtpInfo getMtpInfo() {
+        return mtpInfo;
     }
     
     public String getQuantizationType() {

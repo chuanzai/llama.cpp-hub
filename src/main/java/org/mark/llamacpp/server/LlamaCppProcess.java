@@ -2,11 +2,17 @@ package org.mark.llamacpp.server;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -103,6 +109,12 @@ public class LlamaCppProcess {
 			ProcessBuilder pb = new ProcessBuilder(args);
 
 			Map<String, String> env = pb.environment();
+			// 处理linux，windows也需要增加
+			if (isWindows()) {
+				this.applyWindowsRuntimePath(pb, env);
+			}
+			
+			// 
 			String existingLdPath = env.get("LD_LIBRARY_PATH");
 
 			StringBuilder ldPathBuilder = new StringBuilder();
@@ -122,7 +134,7 @@ public class LlamaCppProcess {
 			};
 			for (String rocmPath : rocmPaths) {
 				if (ldPathBuilder.length() > 0) {
-				ldPathBuilder.append(":");
+					ldPathBuilder.append(":");
 				}
 				ldPathBuilder.append(rocmPath);
 			}
@@ -164,12 +176,18 @@ public class LlamaCppProcess {
 	}
 
 	/**
-	 * 	停止进程 — Fix 版本。
+	 * 	停止进程 — Windows 修复版。
 	 * 	
-	 * 	改进点：
-	 * 	- 先关闭 stdwriter，防止 SIGPIPE
-	 * 	- 显式关闭子进程的 stdout/stderr 流，让 reader 线程的 readLine() 立即退出
-	 * 	- destroyForcibly 后追加 waitFor(1) 确保进程真正回收
+	 * 	操作顺序（重要，特别是 Windows）：
+	 * 	1. 关闭 stdin writer
+	 * 	2. 先 destroy() 杀死子进程 → 关闭管道写端 → 读端 ReadFile 收到 ERROR_BROKEN_PIPE
+	 * 	3. 再关闭 Java 端的 InputStream/ErrorStream
+	 * 	4. 等待 reader 线程自然退出
+	 * 	
+	 * 	为什么不能先关流再杀进程（Windows）：
+	 * 	在 Windows 上，CloseHandle(管道读端) 不会中断另一个线程中正在进行的 ReadFile()。
+	 * 	虚拟线程因此永久 pinned 在 readLine() 上，joinThread 超时后漏掉线程。
+	 * 	先杀进程让 Windows 关闭写端，ReadFile 返回断管错误，reader 线程自然 exit。
 	 */
 	public synchronized boolean stop() {
 		if (!this.isRunning.getAndSet(false)) {
@@ -181,12 +199,7 @@ public class LlamaCppProcess {
 		this.stdwriter = null;
 
 		if (this.process != null) {
-			// 2. 主动关闭子进程的输出流（即 Java 端的输入流），
-			//    让 reader 线程的 readLine() 立即收到 EOF / IOException，而非永久阻塞
-			closeQuietly(this.process.getInputStream());
-			closeQuietly(this.process.getErrorStream());
-
-			// 3. 优雅终止
+			// 2. 先优雅终止进程 — 关闭进程端管道句柄
 			this.process.destroy();
 
 			try {
@@ -198,13 +211,192 @@ public class LlamaCppProcess {
 				this.process.destroyForcibly();
 				Thread.currentThread().interrupt();
 			}
+
+			// 3. 进程已死 / 管道已断裂，再关闭 Java 端流（reader 线程已收到 EOF 或 IOException）
+			closeQuietly(this.process.getInputStream());
+			closeQuietly(this.process.getErrorStream());
 		}
 
-		// 4. 等待 reader 线程（流已关闭，readLine 应快速返回）
+		// 4. 等待 reader 线程自然退出
 		joinThread(this.outputThread, 2000);
 		joinThread(this.errorThread, 2000);
 
 		return true;
+	}
+	
+	
+	// ========================================================================
+	// Windows ROCm — 添加Windows上的ROCm环境
+	// ========================================================================
+	
+	
+	private void applyWindowsRuntimePath(ProcessBuilder pb, Map<String, String> env) {
+		List<String> paths = new ArrayList<>();
+		this.addExistingDir(paths, this.llamaBinPath);
+
+		List<String> args = splitCommandLineArgs(this.cmd);
+		if (!args.isEmpty()) {
+			File exe = new File(args.get(0));
+			File exeDir = exe.getParentFile();
+			if (exeDir != null) {
+				this.addExistingDir(paths, exeDir.getAbsolutePath());
+				pb.directory(exeDir);
+			}
+		}
+
+		this.addWindowsRocmDirs(paths);
+		this.addWindowsCudartDirs(paths);
+		this.prependPath(env, paths);
+	}
+
+	private void addWindowsRocmDirs(List<String> paths) {
+		File rocmRoot = new File("C:\\Program Files\\AMD\\ROCm");
+		File[] versions = rocmRoot.listFiles(File::isDirectory);
+		if (versions != null) {
+			Arrays.sort(versions, Comparator.comparing(File::getName).reversed());
+			for (File version : versions) {
+				this.addExistingDir(paths, new File(version, "bin").getAbsolutePath());
+				this.addExistingDir(paths, new File(version, "bin\\rocblas").getAbsolutePath());
+				this.addExistingDir(paths, new File(version, "bin\\hipblaslt").getAbsolutePath());
+			}
+		}
+
+		String[] fallbackRoots = {
+			"C:\\Program Files\\AMD\\AI_Bundle\\ROCm",
+			"C:\\Program Files\\AMD\\AI_Bundle"
+		};
+		for (String root : fallbackRoots) {
+			File dir = new File(root);
+			if (!dir.isDirectory()) {
+				continue;
+			}
+			this.addExistingDir(paths, new File(dir, "bin").getAbsolutePath());
+			this.addExistingDir(paths, new File(dir, "bin\\rocblas").getAbsolutePath());
+			this.addExistingDir(paths, new File(dir, "bin\\hipblaslt").getAbsolutePath());
+		}
+	}
+
+	private void addWindowsCudartDirs(List<String> paths) {
+		// 如果 llamaBinPath 下已有 cudart DLL，则跳过
+		if (this.hasCudartDlls(this.llamaBinPath)) {
+			return;
+		}
+		// 扫描 llamacpp/ 下所有 cudart 目录，全部加入 PATH
+		String root = LlamaServer.getDefaultLlamaCppPath();
+		Path rootPath = Paths.get(root);
+		if (!Files.exists(rootPath) || !Files.isDirectory(rootPath)) {
+			return;
+		}
+		try (java.util.stream.Stream<Path> entries = Files.list(rootPath)) {
+			for (Path subDir : entries.toList()) {
+				if (!Files.isDirectory(subDir)) {
+					continue;
+				}
+				if (!this.hasCudartDlls(subDir.toString())) {
+					continue;
+				}
+				this.addExistingDir(paths, subDir.toAbsolutePath().toString());
+			}
+		} catch (IOException e) {
+			logger.warn("扫描 cudart 目录失败: {}", e.getMessage());
+		}
+	}
+
+	private boolean hasCudartDlls(String dirPath) {
+		if (dirPath == null || dirPath.isBlank()) {
+			return false;
+		}
+		Path dir = Paths.get(dirPath);
+		if (!Files.isDirectory(dir)) {
+			return false;
+		}
+		try (java.util.stream.Stream<Path> entries = Files.list(dir)) {
+			boolean hasCublas = false;
+			boolean hasCublasLt = false;
+			boolean hasCudart = false;
+			for (Path entry : entries.toList()) {
+				if (!Files.isRegularFile(entry)) {
+					continue;
+				}
+				String name = entry.getFileName().toString();
+				String lower = name.toLowerCase();
+				if (lower.startsWith("cublas64_") && lower.endsWith(".dll")) {
+					hasCublas = true;
+				}
+				if (lower.startsWith("cublaslt64_") && lower.endsWith(".dll")) {
+					hasCublasLt = true;
+				}
+				if (lower.startsWith("cudart64_") && lower.endsWith(".dll")) {
+					hasCudart = true;
+				}
+			}
+			return hasCublas && hasCublasLt && hasCudart;
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
+	private void addExistingDir(List<String> paths, String path) {
+		if (path == null || path.isBlank()) {
+			return;
+		}
+		File dir = new File(path);
+		if (!dir.isDirectory()) {
+			return;
+		}
+		String abs = dir.getAbsolutePath();
+		for (String existing : paths) {
+			if (existing.equalsIgnoreCase(abs)) {
+				return;
+			}
+		}
+		paths.add(abs);
+	}
+
+	private void prependPath(Map<String, String> env, List<String> paths) {
+		if (paths == null || paths.isEmpty()) {
+			return;
+		}
+		String key = this.findEnvKey(env, "PATH");
+		String current = key == null ? "" : env.getOrDefault(key, "");
+		StringBuilder merged = new StringBuilder();
+		for (String path : paths) {
+			if (current != null && containsPathIgnoreCase(current, path)) {
+				continue;
+			}
+			if (merged.length() > 0) {
+				merged.append(';');
+			}
+			merged.append(path);
+		}
+		if (current != null && !current.isBlank()) {
+			if (merged.length() > 0) {
+				merged.append(';');
+			}
+			merged.append(current);
+		}
+		env.put(key == null ? "PATH" : key, merged.toString());
+	}
+
+	private String findEnvKey(Map<String, String> env, String key) {
+		for (String existing : env.keySet()) {
+			if (existing.equalsIgnoreCase(key)) {
+				return existing;
+			}
+		}
+		return null;
+	}
+
+	private boolean containsPathIgnoreCase(String pathList, String path) {
+		if (pathList == null || path == null) {
+			return false;
+		}
+		for (String entry : pathList.split(";")) {
+			if (entry.trim().equalsIgnoreCase(path)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// ========================================================================
