@@ -67,14 +67,14 @@ public class McpRouterHandler extends SimpleChannelInboundHandler<FullHttpReques
 		}
 		Matcher sseMatcher = SSE_PATH.matcher(path);
 		if (request.method() == HttpMethod.GET && sseMatcher.matches()) {
-			logger.info("MCP路由分发旧版SSE连接: serviceKey={}", sseMatcher.group(1));
-			this.server.handleLegacySseConnect(ctx, sseMatcher.group(1));
+			logger.info("MCP路由分发SSE连接: serviceKey={}", sseMatcher.group(1));
+			this.server.handleSseConnect(ctx, sseMatcher.group(1));
 			return;
 		}
 		Matcher msgMatcher = MESSAGE_PATH.matcher(path);
 		if (request.method() == HttpMethod.POST && msgMatcher.matches()) {
-			logger.info("MCP路由分发消息请求: serviceKey={}", msgMatcher.group(1));
-			this.server.handleLegacyMessagePost(ctx, request, msgMatcher.group(1));
+			logger.info("MCP路由分发SSE消息请求: serviceKey={}", msgMatcher.group(1));
+			this.server.handleSseMessagePost(ctx, request, msgMatcher.group(1));
 			return;
 		}
 		logger.info("MCP路由未命中: method={}, path={}", request.method().name(), path);

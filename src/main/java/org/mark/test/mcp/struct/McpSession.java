@@ -6,14 +6,14 @@ public class McpSession {
 
 	private final String id;
 	private final String serviceKey;
-	private final boolean legacySse;
+	private final boolean sse;
 	private volatile ChannelHandlerContext ctx;
 
-	public McpSession(String id, String serviceKey, ChannelHandlerContext ctx, boolean legacySse) {
+	public McpSession(String id, String serviceKey, ChannelHandlerContext ctx, boolean sse) {
 		this.id = id;
 		this.serviceKey = serviceKey;
 		this.ctx = ctx;
-		this.legacySse = legacySse;
+		this.sse = sse;
 	}
 
 	public String getId() {
@@ -24,8 +24,8 @@ public class McpSession {
 		return serviceKey;
 	}
 
-	public boolean isLegacySse() {
-		return legacySse;
+	public boolean isSse() {
+		return sse;
 	}
 
 	public ChannelHandlerContext getCtx() {
