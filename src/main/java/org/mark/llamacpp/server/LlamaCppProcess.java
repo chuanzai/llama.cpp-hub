@@ -49,6 +49,7 @@ public class LlamaCppProcess {
 	private Thread outputThread;
 	private Thread errorThread;
 	private final AtomicBoolean isRunning = new AtomicBoolean(false);
+	private final AtomicBoolean stopRequested = new AtomicBoolean(false);
 	private Consumer<String> outputHandler;
 	private Consumer<ProcessExitInfo> onProcessExited;
 	private BufferedWriter stdwriter;
@@ -175,8 +176,11 @@ public class LlamaCppProcess {
 			}
 
 			this.isRunning.set(true);
-			this.exitFuture = new CompletableFuture<>();
 			this.startOutputReaders();
+			this.exitFuture = this.process.onExit().thenApply(v -> {
+				this.onProcessExit();
+				return null;
+			});
 			return true;
 
 		} catch (IOException e) {
@@ -204,13 +208,8 @@ public class LlamaCppProcess {
 			return false;
 		}
 
-		// 标记为预期退出，防止 onReaderExit 误报为 crash
-		if (this.exitFuture != null && !this.exitFuture.isDone()) {
-			ProcessExitInfo info = new ProcessExitInfo();
-			info.unexpected = false;
-			this.exitInfoRef.set(info);
-			this.exitFuture.complete(null);
-		}
+		// 标记为预期退出
+		this.stopRequested.set(true);
 
 		// 1. 关闭 stdin writer — 防止向已死进程写入时触发 SIGPIPE
 		closeQuietly(this.stdwriter);
@@ -442,12 +441,9 @@ public class LlamaCppProcess {
 					safeHandler.accept(line);
 				}
 			} catch (IOException e) {
-				// 流关闭导致的异常，只在真正运行中时警告
 				if (this.isRunning.get()) {
 					logger.warn("读取进程输出流时发生错误: {}", e.getMessage());
 				}
-			} finally {
-				onReaderExit();
 			}
 		});
 
@@ -461,38 +457,31 @@ public class LlamaCppProcess {
 				if (this.isRunning.get()) {
 					logger.warn("读取进程错误流时发生错误: {}", e.getMessage());
 				}
-			} finally {
-				onReaderExit();
 			}
 		});
 	}
 
 	/**
-	 * Called when either reader thread exits (EOF on stdout or stderr).
-	 * This means the process has exited. We trigger the exit callback once.
+	 * Called by Process.onExit() when the process terminates.
+	 * This is the authoritative source for process exit detection.
 	 */
-	private synchronized void onReaderExit() {
-		if (this.exitFuture != null && this.exitFuture.isDone()) {
+	private synchronized void onProcessExit() {
+		if (this.exitInfoRef.get() != null) {
 			return;
 		}
-		if (this.process == null || !this.process.isAlive()) {
-			ProcessExitInfo info = new ProcessExitInfo();
-			info.unexpected = !this.isRunning.get();
+		ProcessExitInfo info = new ProcessExitInfo();
+		info.unexpected = !this.stopRequested.get();
+		try {
+			info.exitCode = this.process.exitValue();
+		} catch (IllegalArgumentException e) {
+			info.exitCode = -1;
+		}
+		this.exitInfoRef.set(info);
+		if (this.onProcessExited != null) {
 			try {
-				info.exitCode = this.process.exitValue();
-			} catch (IllegalArgumentException e) {
-				info.exitCode = -1;
-			}
-			this.exitInfoRef.set(info);
-			if (this.exitFuture != null) {
-				this.exitFuture.complete(null);
-			}
-			if (this.onProcessExited != null) {
-				try {
-					this.onProcessExited.accept(info);
-				} catch (Exception e) {
-					logger.error("onProcessExited 回调抛出异常: {}", e.getMessage());
-				}
+				this.onProcessExited.accept(info);
+			} catch (Exception e) {
+				logger.error("onProcessExited 回调抛出异常: {}", e.getMessage());
 			}
 		}
 	}
