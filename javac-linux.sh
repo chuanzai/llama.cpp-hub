@@ -31,11 +31,10 @@ fi
 #    echo "   建议使用 JDK 21 以确保语言特性和性能优化兼容。"
 #fi
 
-# 获取版本信息 (例如: javac 24.0.2)
+# 获取版本信息 (例如: javac 21.0.11)
 JAVA_VERSION=$("$JAVAC" -version 2>&1)
-# 使用正则表达式提取主版本号 (第一位数字)
-# grep -oP '\d+' 表示提取所有数字
-MAJOR_VERSION=$(echo "$JAVA_VERSION" | grep -oP '\d+' | head -n 1)
+# 使用 sed 提取主版本号 (第一位数字)，兼容 macOS 和 Linux
+MAJOR_VERSION=$(echo "$JAVA_VERSION" | sed -E 's/[^0-9]*([0-9]+).*/\1/')
 # 检查是否成功提取到版本号
 if [ -z "$MAJOR_VERSION" ]; then
     echo "❌ 错误：无法解析 Java 版本号: $JAVA_VERSION"
@@ -77,16 +76,16 @@ done
 if [ -z "$CLASSPATH" ]; then
     echo "⚠️ 警告：lib/ 目录下未找到任何 .jar 文件。若项目无依赖可忽略。"
 fi
-# === 4. 执行编译（使用绝对路径 javac）===
+# === 4. 执行编译（使用 find 命令查找所有 java 文件，兼容 macOS 和 Linux）===
 echo "🔧 正在使用 JDK 21 编译源码到 $CLASSES_DIR..."
-shopt -s globstar
+JAVA_FILES=$(find "$SRC_DIR" -name "*.java" -type f)
 "$JAVAC" \
     -source 21 \
     -target 21 \
     -encoding UTF-8 \
     -d "$CLASSES_DIR" \
     -cp "$CLASSPATH" \
-    "$SRC_DIR"/**/*.java
+    $JAVA_FILES
 # === 5. 检查结果，并创建启动脚本 ===
 if [ $? -eq 0 ]; then
     RUN_SCRIPT="$PROJECT_ROOT/build/run.sh"
