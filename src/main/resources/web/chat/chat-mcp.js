@@ -50,7 +50,7 @@
     const normalized = normalizeTransportType(transport);
     return {
       transport: normalized === 'streamable-http' ? 'streamable_http' : 'sse',
-      url: 'your mcp server url',
+      url: window.I18N.t('page.chat.main.mcp.config_url_placeholder', 'your mcp server url'),
       headers: {},
       timeout: 5,
       sse_read_timeout: 300
@@ -216,7 +216,7 @@
 
   function extractToolResultText(apiJson) {
     if (apiJson && apiJson.success === false) {
-      return apiJson.error ? '工具执行失败：' + apiJson.error : '工具执行失败';
+      return apiJson.error ? window.I18N.t('page.chat.main.mcp.error.execute_failed_detail', '工具执行失败：{error}').replace('{error}', apiJson.error) : window.I18N.t('page.chat.main.mcp.error.execute_failed', '工具执行失败');
     }
     const contentText =
       apiJson &&
@@ -234,7 +234,7 @@
       return contentText;
     }
     if (parsed && parsed.error && parsed.error.message) {
-      return '工具执行失败：' + parsed.error.message;
+      return window.I18N.t('page.chat.main.mcp.error.execute_failed_detail', '工具执行失败：{error}').replace('{error}', parsed.error.message);
     }
     const blocks = [];
     const result = parsed && parsed.result && typeof parsed.result === 'object' ? parsed.result : null;
@@ -267,10 +267,10 @@
     try {
       parsed = JSON.parse(raw);
     } catch (error) {
-      throw new Error('工具参数不是完整的 JSON：' + raw);
+      throw new Error(window.I18N.t('page.chat.main.mcp.error.incomplete_json', '工具参数不是完整的 JSON：{raw}').replace('{raw}', raw));
     }
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('工具参数必须是 JSON 对象');
+      throw new Error(window.I18N.t('page.chat.main.mcp.error.args_not_object', '工具参数必须是 JSON 对象'));
     }
     return parsed;
   }
@@ -486,7 +486,7 @@
       const currentAssistant = getCurrentAssistant();
       const enabledUrls = new Set(getAssistantUrls(currentAssistant));
       if (!entries.length) {
-        els.mcpServerList.innerHTML = '<div class="mcp-empty">暂无已连接的 MCP 服务</div>';
+        els.mcpServerList.innerHTML = '<div class="mcp-empty">' + window.I18N.t('page.chat.main.mcp.no_servers', '暂无已连接的 MCP 服务') + '</div>';
       } else {
         els.mcpServerList.innerHTML = entries
           .map(function (server) {
@@ -506,7 +506,7 @@
                           '<div class="mcp-tool-name-row">' +
                             '<strong class="mcp-tool-name">' + escapeHtml(tool.name) + '</strong>' +
                           '</div>' +
-                          '<div class="mcp-tool-desc">' + escapeHtml(tool.description || '该工具暂无描述') + '</div>' +
+                          '<div class="mcp-tool-desc">' + escapeHtml(tool.description || window.I18N.t('page.chat.main.mcp.no_description', '该工具暂无描述')) + '</div>' +
                         '</div>' +
                         '<span class="toggle-switch">' +
                           '<input type="checkbox" data-mcp-tool-toggle="' + escapeHtml(toolKey) + '"' +
@@ -521,24 +521,24 @@
                     );
                   })
                   .join('')
-              : '<div class="mcp-empty">该服务当前未发现可用工具</div>';
+              : '<div class="mcp-empty">' + window.I18N.t('page.chat.main.mcp.no_tools', '该服务当前未发现可用工具') + '</div>';
             return (
               '<div class="mcp-server-item' + (!isServerEnabled ? ' is-disabled' : '') + '" data-mcp-server="' + escapeHtml(server.url) + '">' +
                 '<div class="mcp-server-main">' +
                   '<div class="mcp-server-head">' +
                     '<div class="mcp-server-head-main">' +
                       '<strong>' + escapeHtml(server.name || server.url) + '</strong>' +
-                      '<span class="mcp-badge">' + escapeHtml(server.type === 'streamable-http' ? 'HTTP' : 'SSE') + '</span>' +
-                      '<span class="mcp-badge subtle">' + enabledToolCount + ' / ' + server.tools.length + ' 个工具已启用</span>' +
+                      '<span class="mcp-badge">' + escapeHtml(server.type === 'streamable-http' ? window.I18N.t('page.chat.main.mcp.transport_http', 'HTTP') : window.I18N.t('page.chat.main.mcp.transport_sse', 'SSE')) + '</span>' +
+                      '<span class="mcp-badge subtle">' + window.I18N.t('page.chat.main.mcp.tools_enabled_count', '{n} / {m} 个工具已启用').replace('{n}', enabledToolCount).replace('{m}', server.tools.length) + '</span>' +
                     '</div>' +
                     '<div class="mcp-server-controls">' +
                       '<button type="button" class="ghost-button mcp-collapse-btn" data-mcp-collapse="' + escapeHtml(server.url) + '" aria-expanded="' + (!isCollapsed ? 'true' : 'false') + '">' +
                         '<span class="mcp-collapse-icon">' + (isCollapsed ? '▸' : '▾') + '</span>' +
-                        '<span>' + (isCollapsed ? '展开工具' : '收起工具') + '</span>' +
+                        '<span>' + (isCollapsed ? window.I18N.t('page.chat.main.mcp.expand_tools', '展开工具') : window.I18N.t('page.chat.main.mcp.collapse_tools', '收起工具')) + '</span>' +
                       '</button>' +
                       '<label class="settings-toggle mcp-server-toggle">' +
                         '<span class="settings-toggle-text">' +
-                          '<span>' + (isServerEnabled ? '已启用' : '未启用') + '</span>' +
+                          '<span>' + (isServerEnabled ? window.I18N.t('page.chat.main.mcp.server_enabled', '已启用') : window.I18N.t('page.chat.main.mcp.server_disabled', '未启用')) + '</span>' +
                         '</span>' +
                         '<span class="toggle-switch">' +
                           '<input type="checkbox" data-mcp-toggle="' + escapeHtml(server.url) + '"' +
@@ -551,10 +551,10 @@
                   '</div>' +
                   '<div class="mcp-server-url">' + escapeHtml(server.url) + '</div>' +
                   (server.description ? '<div class="mcp-server-desc">' + escapeHtml(server.description) + '</div>' : '') +
-                  '<div class="mcp-server-tools">仅启用的工具会出现在发送给模型的请求中</div>' +
+                  '<div class="mcp-server-tools">' + window.I18N.t('page.chat.main.mcp.tools_info_text', '仅启用的工具会出现在发送给模型的请求中') + '</div>' +
                   '<div class="mcp-tool-list' + (isCollapsed ? ' is-collapsed' : '') + '" data-mcp-tool-list="' + escapeHtml(server.url) + '">' + toolItems + '</div>' +
                   '<div class="mcp-server-actions">' +
-                    '<button type="button" class="ghost danger" data-mcp-remove="' + escapeHtml(server.url) + '">移除服务</button>' +
+                    '<button type="button" class="ghost danger" data-mcp-remove="' + escapeHtml(server.url) + '">' + window.I18N.t('page.chat.main.mcp.remove_service', '移除服务') + '</button>' +
                   '</div>' +
                 '</div>' +
               '</div>'
@@ -571,8 +571,8 @@
         }, 0);
         const enabledTools = getEnabledTools(currentAssistant);
         els.mcpSummary.textContent = enabledTools.length
-          ? '当前助手已启用 ' + enabledServerCount + ' 个 MCP 服务，向模型暴露 ' + enabledTools.length + ' / ' + totalToolCount + ' 个工具'
-          : '当前助手未向模型暴露任何 MCP 工具';
+          ? window.I18N.t('page.chat.main.mcp.summary_text', '当前助手已启用 {n} 个 MCP 服务，向模型暴露 {a} / {b} 个工具').replace('{n}', enabledServerCount).replace('{a}', enabledTools.length).replace('{b}', totalToolCount)
+          : window.I18N.t('page.chat.main.mcp.summary_empty', '当前助手未向模型暴露任何 MCP 工具');
       }
       restoreScrollPositions(scrollSnapshots);
       if (typeof requestAnimationFrame === 'function') {
@@ -591,7 +591,7 @@
         headers: getHeaders()
       });
       if (!json || json.success === false) {
-        throw new Error((json && json.error) || '加载 MCP 服务失败');
+        throw new Error((json && json.error) || window.I18N.t('page.chat.main.mcp.error.load_failed', '加载 MCP 服务失败'));
       }
       const servers =
         json &&
@@ -603,7 +603,7 @@
       registryServers = normalizeRegistry(servers);
       renderServerList();
       if (!opts.silentToast) {
-        showToast('success', 'MCP 服务列表已刷新');
+        showToast('success', window.I18N.t('page.chat.main.mcp.refreshed', 'MCP 服务列表已刷新'));
       }
       return registryServers;
     }
@@ -611,10 +611,10 @@
     function sanitizeAddUrl(rawUrl) {
       const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
       if (!url) {
-        throw new Error('请先输入 MCP 地址');
+        throw new Error(window.I18N.t('page.chat.main.mcp.error.no_url', '请先输入 MCP 地址'));
       }
       if (!/^https?:\/\//i.test(url)) {
-        throw new Error('MCP 地址需以 http:// 或 https:// 开头');
+        throw new Error(window.I18N.t('page.chat.main.mcp.error.invalid_url', 'MCP 地址需以 http:// 或 https:// 开头'));
       }
       return url;
     }
@@ -622,7 +622,7 @@
     function normalizeConfigTransport(value) {
       const normalized = normalizeTransportType(value);
       if (normalized !== 'sse' && normalized !== 'streamable-http') {
-        throw new Error('transport 仅支持 sse 或 streamable_http');
+        throw new Error(window.I18N.t('page.chat.main.mcp.error.invalid_transport', 'transport 仅支持 sse 或 streamable_http'));
       }
       return normalized;
     }
@@ -632,7 +632,7 @@
         return {};
       }
       if (!value || typeof value !== 'object' || Array.isArray(value)) {
-        throw new Error('headers 必须是 JSON 对象');
+        throw new Error(window.I18N.t('page.chat.main.mcp.error.invalid_headers', 'headers 必须是 JSON 对象'));
       }
       const headers = {};
       Object.keys(value).forEach(function (key) {
@@ -655,7 +655,7 @@
       }
       const numeric = Number(value);
       if (!Number.isFinite(numeric) || numeric <= 0) {
-        throw new Error(fieldName + ' 必须是大于 0 的数字');
+        throw new Error(window.I18N.t('page.chat.main.mcp.error.field_must_be_number', '{fieldName} 必须是大于 0 的数字').replace('{fieldName}', fieldName));
       }
       return numeric;
     }
@@ -663,16 +663,16 @@
     function parseJsonServerConfig(rawText) {
       const text = typeof rawText === 'string' ? rawText.trim() : '';
       if (!text) {
-        throw new Error('请先输入 MCP JSON 配置');
+        throw new Error(window.I18N.t('page.chat.main.mcp.error.no_json', '请先输入 MCP JSON 配置'));
       }
       let parsed;
       try {
         parsed = JSON.parse(text);
       } catch (error) {
-        throw new Error('JSON 格式错误，请检查后重试');
+        throw new Error(window.I18N.t('page.chat.main.mcp.error.invalid_json', 'JSON 格式错误，请检查后重试'));
       }
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        throw new Error('MCP 配置必须是 JSON 对象');
+        throw new Error(window.I18N.t('page.chat.main.mcp.error.config_not_object', 'MCP 配置必须是 JSON 对象'));
       }
       const type = normalizeConfigTransport(parsed.transport || parsed.type);
       const url = sanitizeAddUrl(parsed.url || parsed.baseUrl);
@@ -732,7 +732,7 @@
         body: JSON.stringify(buildConfigPayload(normalizedConfig))
       });
       if (!json || json.success === false) {
-        throw new Error((json && json.error) || '连接 MCP 服务失败');
+        throw new Error((json && json.error) || window.I18N.t('page.chat.main.mcp.error.connect_failed', '连接 MCP 服务失败'));
       }
       await refreshRegistry({ silentToast: true });
       const nextUrls = getAssistantUrls();
@@ -742,7 +742,7 @@
       }
       renderServerList();
       await persistState({ immediate: true, showErrorToast: true });
-      showToast('success', 'MCP 服务已连接');
+      showToast('success', window.I18N.t('page.chat.main.mcp.connected', 'MCP 服务已连接'));
     }
 
     function getTemplateText(transport) {
@@ -816,7 +816,7 @@
         body: JSON.stringify({ url: url })
       });
       if (!json || json.success === false) {
-        throw new Error((json && json.error) || '移除 MCP 服务失败');
+        throw new Error((json && json.error) || window.I18N.t('page.chat.main.mcp.error.remove_failed', '移除 MCP 服务失败'));
       }
       delete registryServers[url];
       removeServerToolStates(url);
@@ -832,7 +832,7 @@
       }));
       renderServerList();
       await persistState({ immediate: true, showErrorToast: true });
-      showToast('success', 'MCP 服务已移除');
+      showToast('success', window.I18N.t('page.chat.main.mcp.removed', 'MCP 服务已移除'));
     }
 
     function toggleServer(url, enabled) {
@@ -879,7 +879,7 @@
       if (els.mcpDialogSaveBtn) {
         els.mcpDialogSaveBtn.addEventListener('click', function () {
           addServerFromDialog().catch(function (error) {
-            showToast('error', error && error.message ? error.message : '连接 MCP 服务失败');
+            showToast('error', error && error.message ? error.message : window.I18N.t('page.chat.main.mcp.error.connect_failed', '连接 MCP 服务失败'));
           });
         });
       }
@@ -895,7 +895,7 @@
           if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
             event.preventDefault();
             addServerFromDialog().catch(function (error) {
-              showToast('error', error && error.message ? error.message : '连接 MCP 服务失败');
+              showToast('error', error && error.message ? error.message : window.I18N.t('page.chat.main.mcp.error.connect_failed', '连接 MCP 服务失败'));
             });
             return;
           }
@@ -915,14 +915,14 @@
       if (els.mcpAddBtn) {
         els.mcpAddBtn.addEventListener('click', function () {
           addServer().catch(function (error) {
-            showToast('error', error && error.message ? error.message : '连接 MCP 服务失败');
+            showToast('error', error && error.message ? error.message : window.I18N.t('page.chat.main.mcp.error.connect_failed', '连接 MCP 服务失败'));
           });
         });
       }
       if (els.mcpRefreshBtn) {
         els.mcpRefreshBtn.addEventListener('click', function () {
           refreshRegistry().catch(function (error) {
-            showToast('error', error && error.message ? error.message : '刷新 MCP 服务失败');
+            showToast('error', error && error.message ? error.message : window.I18N.t('page.chat.main.mcp.error.refresh_failed', '刷新 MCP 服务失败'));
           });
         });
       }
@@ -933,7 +933,7 @@
           }
           event.preventDefault();
           addServer().catch(function (error) {
-            showToast('error', error && error.message ? error.message : '连接 MCP 服务失败');
+            showToast('error', error && error.message ? error.message : window.I18N.t('page.chat.main.mcp.error.connect_failed', '连接 MCP 服务失败'));
           });
         });
       }
@@ -965,7 +965,7 @@
             return;
           }
           removeServer(button.getAttribute('data-mcp-remove') || '').catch(function (error) {
-            showToast('error', error && error.message ? error.message : '移除 MCP 服务失败');
+            showToast('error', error && error.message ? error.message : window.I18N.t('page.chat.main.mcp.error.remove_failed', '移除 MCP 服务失败'));
           });
         });
       }
@@ -1005,7 +1005,7 @@
         let isError = false;
         try {
           if (!tool) {
-            throw new Error('未找到可执行的 MCP 工具: ' + toolCall.function.name);
+            throw new Error(window.I18N.t('page.chat.main.mcp.error.no_tool', '未找到可执行的 MCP 工具: {name}').replace('{name}', toolCall.function.name));
           }
           const parsedArguments = parseToolArgumentsPayload(toolCall.function.arguments);
           const response = await apiFetch('/api/tools/execute', {
@@ -1019,12 +1019,12 @@
             })
           });
           if (!response || response.success === false) {
-            throw new Error((response && response.error) || '工具调用失败');
+            throw new Error((response && response.error) || window.I18N.t('page.chat.main.mcp.error.scope', '工具调用失败'));
           }
-          content = extractToolResultText(response).trim() || '(工具未返回文本内容)';
+          content = extractToolResultText(response).trim() || window.I18N.t('page.chat.main.misc.message_none', '(工具未返回文本内容)');
         } catch (error) {
           isError = true;
-          content = '工具执行失败：' + (error && error.message ? error.message : '未知错误');
+          content = window.I18N.t('page.chat.main.mcp.error.execute_failed_detail', '工具执行失败：{error}').replace('{error}', error && error.message ? error.message : '未知错误');
         }
         results.push({
           role: 'tool',

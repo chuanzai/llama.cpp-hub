@@ -167,6 +167,7 @@
             editingOriginalPath = '';
             if (typeof window.closeModal === 'function') window.closeModal('mobileModelPathEditModal');
             await refresh();
+            if (typeof window.loadModels === 'function') window.loadModels();
         } catch (e) {
             toast('错误', '网络请求失败', 'error');
         } finally {
@@ -188,6 +189,7 @@
             if (data && data.success) {
                 toast('成功', '已删除', 'success');
                 await refresh();
+                if (typeof window.loadModels === 'function') window.loadModels();
             } else {
                 toast('错误', (data && data.error) ? data.error : '删除失败', 'error');
             }

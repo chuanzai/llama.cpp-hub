@@ -158,7 +158,7 @@
         #main-usage-report .tab-bar button { flex:1; padding:8px 12px; border:none; border-radius:7px; background:transparent; color:#6b7280; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; font-family:inherit; }
         #main-usage-report .tab-bar button:hover { color:#4f46e5; background:rgba(99,102,241,0.06); }
         #main-usage-report .tab-bar button.active { background:rgba(99,102,241,0.12); color:#4f46e5; font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
-        #main-usage-report .tab-panel { display:none; flex:1; flex-direction:column; }
+        #main-usage-report .tab-panel { display:none; flex:1; flex-direction:column; min-height:0; }
         #main-usage-report .tab-panel.active { display:flex; }
         #main-usage-report .report-card { background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:12px; margin:12px 0; box-shadow:0 8px 20px rgba(0,0,0,0.06); flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
         #main-usage-report .report-card-row { flex-direction:row; gap:12px; }
@@ -174,12 +174,13 @@
         #main-usage-report .table-wrap { flex:1; overflow:auto; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-color); }
         #main-usage-report .token-card { background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; padding:8px 10px; margin-bottom:6px; }
         #main-usage-report .token-card:last-child { margin-bottom:0; }
-        #main-usage-report .token-card .tk-model { font-weight:600; font-size:13px; margin-bottom:4px; color:var(--text-primary); }
+        #main-usage-report .token-card .tk-model { font-weight:600; font-size:13px; margin-bottom:4px; color:var(--text-primary); display:flex; align-items:center; gap:6px; }
+        #main-usage-report .token-card .tk-badge { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:4px; background:var(--primary-color); color:#fff; font-size:11px; font-weight:700; flex-shrink:0; }
         #main-usage-report .token-card .tk-tokens { font-size:12px; color:var(--text-secondary); }
         #main-usage-report .token-card .tk-tokens span { margin-right:12px; }
         #main-usage-report .token-card .tk-cache { color:var(--accent-color); }
         #main-usage-report .token-scroll .empty { text-align:center; color:var(--text-secondary); padding:24px; font-size:13px; }
-        #main-usage-report .report-summary { display:flex; gap:12px; margin:0; flex-shrink:0; }
+        #main-usage-report .report-summary { display:flex; gap:12px; margin:0; flex-shrink:0; min-height:0; }
         #main-usage-report .report-summary .stat-card { flex:1; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:12px 16px; box-shadow:0 8px 20px rgba(0,0,0,0.06); }
         #main-usage-report .report-summary .stat-card .stat-value { font-size:24px; font-weight:700; color:var(--primary-color); }
         #main-usage-report .report-summary .stat-card .stat-label { font-size:12px; color:var(--text-secondary); margin-top:4px; }
@@ -189,12 +190,13 @@
         #main-usage-report .report-pagination button { padding:4px 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--card-bg); color:var(--text-primary); cursor:pointer; font-family:inherit; font-size:12px; }
         #main-usage-report .report-pagination button:hover { border-color:var(--primary-color); color:var(--primary-color); }
         #main-usage-report .report-pagination button:disabled { opacity:0.4; cursor:default; }
-        #main-usage-report .chart-wrap { flex:1; position:relative; border:1px solid var(--border-color); border-radius:8px; padding:6px; background:var(--bg-color); overflow:hidden; min-height:200px; max-height:260px; }
+        #main-usage-report .chart-title { font-size:12px; font-weight:600; color:var(--text-secondary); padding:6px 0 4px; flex-shrink:0; }
+        #main-usage-report .chart-title-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0 4px; flex-shrink:0; gap:8px; }
+        #main-usage-report .chart-month-select { padding:2px 6px; border:1px solid var(--border-color); border-radius:5px; background:var(--card-bg); color:var(--text-primary); font-size:11px; font-family:inherit; cursor:pointer; }
+        #main-usage-report .chart-wrap { flex:1; position:relative; border:1px solid var(--border-color); border-radius:8px; padding:6px; background:var(--bg-color); overflow:hidden; min-height:100px; max-height:200px; }
         #main-usage-report .chart-wrap canvas { width:100%; height:100%; display:block; }
         #main-usage-report .chart-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--text-secondary); pointer-events:none; }
-        #main-usage-report .chart-marker-legend { flex-shrink:0; padding:6px 0 0; display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; line-height:1.6; }
-        #main-usage-report .chart-marker-legend .ml-item { color:var(--text-primary); white-space:nowrap; }
-        #main-usage-report .chart-marker-legend .ml-marker { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:3px; background:var(--primary-color); color:#fff; font-size:10px; font-weight:700; margin-right:4px; vertical-align:middle; }
+
         @media (max-width:768px) {
             #main-usage-report .report-summary { flex-direction:column; }
             #main-usage-report .tab-bar { margin:0 12px; }
@@ -293,6 +295,82 @@
             margin-bottom: 12px;
             font-family: Consolas, monospace;
         }
+        [data-theme="dark"] .sidebar-quick-link {
+            background: var(--card-bg);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        [data-theme="dark"] .sidebar-quick-link:hover {
+            background-color: var(--hover-bg);
+            border-color: rgba(129, 140, 248, 0.35);
+        }
+        [data-theme="dark"] .console-tab-btn,
+        [data-theme="dark"] .tab-bar button,
+        [data-theme="dark"] #main-usage-report .tab-bar button,
+        [data-theme="dark"] #main-settings .update-sub-tab-btn,
+        [data-theme="dark"] .tab-btn {
+            color: #94a3b8;
+        }
+        [data-theme="dark"] .console-tab-btn:hover,
+        [data-theme="dark"] .tab-bar button:hover,
+        [data-theme="dark"] #main-usage-report .tab-bar button:hover,
+        [data-theme="dark"] #main-settings .update-sub-tab-btn:hover,
+        [data-theme="dark"] .tab-btn:hover {
+            color: #a5b4fc;
+            background: rgba(129, 140, 248, 0.06);
+        }
+        [data-theme="dark"] .console-tab-btn.active,
+        [data-theme="dark"] .tab-bar button.active,
+        [data-theme="dark"] #main-usage-report .tab-bar button.active,
+        [data-theme="dark"] #main-settings .update-sub-tab-btn.active,
+        [data-theme="dark"] .tab-btn.active {
+            background: rgba(129, 140, 248, 0.14);
+            color: #a5b4fc;
+        }
+        [data-theme="dark"] #main-benchmark-v3 .result-table th {
+            background: var(--sidebar-bg);
+        }
+        [data-theme="dark"] #main-benchmark-v3 .result-table tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        [data-theme="dark"] #main-benchmark-v3 .result-table tbody tr:hover {
+            background: rgba(129, 140, 248, 0.06);
+        }
+        [data-theme="dark"] #main-usage-report .report-table th {
+            background: var(--sidebar-bg);
+        }
+        [data-theme="dark"] #main-usage-report .report-table tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        [data-theme="dark"] #main-usage-report .report-table tbody tr:hover {
+            background: rgba(129, 140, 248, 0.06);
+        }
+        [data-theme="dark"] .llamacpp-installed-badge {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+        [data-theme="dark"] #benchParamsModal .param-field:has(.param-enable-toggle:not(:checked)) .form-label,
+        [data-theme="dark"] #benchParamsModal .param-field:has(.param-enable-toggle:not(:checked)) .form-text {
+            color: #6b7280;
+        }
+        [data-theme="dark"] #benchParamsModal .param-field:has(.param-enable-toggle:not(:checked)) .form-control {
+            background: var(--disabled-bg);
+            border-color: var(--border-color);
+            color: #6b7280;
+        }
+        [data-theme="dark"] #main-benchmark-v3 .param-field:has(.param-enable-toggle:not(:checked)) .form-control {
+            background: var(--disabled-bg);
+            border-color: var(--border-color);
+            color: #6b7280;
+        }
+        [data-theme="dark"] .node-master-banner {
+            background: rgba(245, 158, 11, 0.10) !important;
+            border-color: rgba(245, 158, 11, 0.30) !important;
+            color: #fbbf24 !important;
+        }
+        [data-theme="dark"] .param-desc-trigger {
+            color: var(--text-secondary) !important;
+        }
     </style>
 </head>
 <body>
@@ -385,6 +463,16 @@
                     </span>
                     <i class="fas fa-external-link-alt sidebar-quick-link-ext"></i>
                 </a>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; padding: 0.5rem 0;">
+                <button id="themeToggle" onclick="toggleTheme()" title="common.theme.toggle_title" data-i18n="common.theme.toggle_title" data-i18n-attr="title" style="background: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.4rem 0.7rem; cursor: pointer; color: var(--text-secondary); font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;">
+                    <i id="themeToggleIcon" class="fas fa-moon"></i>
+                    <span id="themeToggleText" data-i18n="common.theme.dark" style="font-size: 0.75rem;">common.theme.dark</span>
+                </button>
+                <button id="langToggle" onclick="toggleLang()" title="Switch Language" style="background: none; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.4rem 0.7rem; cursor: pointer; color: var(--text-secondary); font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;">
+                    <i class="fas fa-language"></i>
+                    <span id="langToggleText" style="font-size: 0.75rem;">EN</span>
+                </button>
             </div>
             <div id="appBuildInfo" style="font-size: 0.75rem; color: var(--text-secondary);">
                 <div id="appVersionText">--</div>
@@ -921,7 +1009,7 @@
                         <div class="settings-panel">
                             <div class="settings-panel-body">
                                 <div class="settings-hint" data-i18n="page.settings.nodes.hint">管理远程 llama.cpp-hub 节点，将多台机器聚合到统一入口。</div>
-                                <div id="nodeMasterBanner" class="alert alert-warning" style="display:none; margin-bottom:0.75rem; padding:0.5rem 0.75rem; font-size:0.8rem; border-radius:0.5rem; background:#fef3c7; border:1px solid #fbbf24; color:#92400e;">
+                                <div id="nodeMasterBanner" class="alert alert-warning node-master-banner" style="display:none; margin-bottom:0.75rem; padding:0.5rem 0.75rem; font-size:0.8rem; border-radius:0.5rem; background:#fef3c7; border:1px solid #fbbf24; color:#92400e;">
                                     <i class="fas fa-exclamation-triangle"></i>
                                     <span data-i18n="page.settings.nodes.not_master">当前节点未启用 master 模式，无法管理远程节点。请在 application.json 中设置 "nodeRole": "master"。</span>
                                 </div>
@@ -974,7 +1062,7 @@
                                         <div id="updateProgressArea" style="display:none;">
                                             <div class="update-progress-card">
                                                 <div class="update-progress-header">
-                                                    <span id="updateProgressText" class="update-progress-text">准备下载...</span>
+                                                    <span id="updateProgressText" class="update-progress-text" data-i18n="page.settings.update.progress.preparing">page.settings.update.progress.preparing</span>
                                                     <span id="updateProgressPercent" class="update-progress-percent">0%</span>
                                                 </div>
                                                 <div class="update-progress-bar-outer">
@@ -986,7 +1074,7 @@
                                                 </div>
                                                 <div class="update-progress-actions">
                                                     <button class="btn btn-secondary btn-sm" id="updateCancelBtn" onclick="cancelUpdateDownload()">
-                                                        <i class="fas fa-times"></i> 取消
+                                                        <i class="fas fa-times"></i> <span data-i18n="common.cancel">common.cancel</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1225,7 +1313,7 @@
                     <div class="card shrink">
                         <div class="bench-actions">
                             <button id="runBenchBtn" class="btn btn-primary" style="font-size:12px;" data-i18n="page.benchmark_v3.run">page.benchmark_v3.run</button>
-                            <button id="benchParamsBtn" class="btn" style="font-size:12px;" data-i18n="page.benchmark_v3.params_settings">page.benchmark_v3.params_settings</button>
+                            <button id="benchParamsBtn" class="btn btn-secondary" style="font-size:12px;" data-i18n="page.benchmark_v3.params_settings">page.benchmark_v3.params_settings</button>
                         </div>
                         <span id="benchParamsStatus" class="sub-text" style="text-align:center;display:block;"></span>
                     </div>
@@ -1266,7 +1354,7 @@
                             <div class="export-btns"><button class="server-export" data-format="csv" data-i18n="page.benchmark_v3.export_csv"><i class="fas fa-file-csv"></i> page.benchmark_v3.export_csv</button><button class="server-export" data-format="json" data-i18n="page.benchmark_v3.export_json"><i class="fas fa-file-code"></i> page.benchmark_v3.export_json</button><button class="server-export" data-format="md" data-i18n="page.benchmark_v3.export_md"><i class="fas fa-markdown"></i> page.benchmark_v3.export_md</button></div>
                         </div>
                         <div class="chart-wrap" id="serverChartWrap"><canvas id="serverChartCanvas"></canvas><div id="serverChartEmpty" class="chart-empty" data-i18n="page.benchmark_v3.chart_empty">page.benchmark_v3.chart_empty</div></div>
-                        <div class="table-wrap"><table class="result-table"><thead><tr><th data-i18n="page.benchmark_v3.table.time">page.benchmark_v3.table.time</th><th data-i18n="page.benchmark_v3.table.model">page.benchmark_v3.table.model</th><th data-i18n="page.benchmark_v3.table.prompt">page.benchmark_v3.table.prompt</th><th data-i18n="page.benchmark_v3.table.prefill_speed">page.benchmark_v3.table.prefill_speed</th><th data-i18n="page.benchmark_v3.table.output">page.benchmark_v3.table.output</th><th data-i18n="page.benchmark_v3.table.output_speed">page.benchmark_v3.table.output_speed</th><th data-i18n="page.benchmark_v3.table.actions">page.benchmark_v3.table.actions</th></tr></thead><tbody id="serverResultBody"><tr id="serverEmptyRow"><td class="empty" colspan="7" data-i18n="page.benchmark_v3.no_records">page.benchmark_v3.no_records</td></tr></tbody></table></div>
+                        <div class="table-wrap"><table class="result-table"><thead><tr><th data-i18n="page.benchmark_v3.table.time">page.benchmark_v3.table.time</th><th data-i18n="page.benchmark_v3.table.model">page.benchmark_v3.table.model</th><th data-i18n="page.benchmark_v3.table.prompt">page.benchmark_v3.table.prompt</th><th data-i18n="page.benchmark_v3.table.prefill_speed">page.benchmark_v3.table.prefill_speed</th><th data-i18n="page.benchmark_v3.table.output">page.benchmark_v3.table.output</th><th data-i18n="page.benchmark_v3.table.output_speed">page.benchmark_v3.table.output_speed</th><th data-i18n="page.benchmark_v3.table.draft">投机解码</th><th data-i18n="page.benchmark_v3.table.actions">page.benchmark_v3.table.actions</th></tr></thead><tbody id="serverResultBody"><tr id="serverEmptyRow"><td class="empty" colspan="8" data-i18n="page.benchmark_v3.no_records">page.benchmark_v3.no_records</td></tr></tbody></table></div>
                     </div>
                 </div>
             </div>
@@ -1291,9 +1379,21 @@
                         </div>
                     </div>
                     <div class="token-chart-col">
+                        <div class="chart-title" data-i18n="page.usage_report.chart.per_model">page.usage_report.chart.per_model</div>
                         <div class="chart-wrap" id="tokenChartWrap">
                             <canvas id="tokenChartCanvas"></canvas>
                             <div id="tokenChartEmpty" class="chart-empty" data-i18n="page.usage_report.chart_empty">page.usage_report.chart_empty</div>
+                        </div>
+                        <div class="chart-title-row">
+                            <div class="chart-title" id="dailyChartTitle" data-i18n="page.usage_report.chart.daily_title">page.usage_report.chart.daily_title</div>
+                            <div style="display:flex; gap:4px;">
+                                <select id="dailyYearSelect" class="chart-month-select"></select>
+                                <select id="dailyMonthSelect" class="chart-month-select"></select>
+                            </div>
+                        </div>
+                        <div class="chart-wrap" id="dailyChartWrap">
+                            <canvas id="dailyChartCanvas"></canvas>
+                            <div id="dailyChartEmpty" class="chart-empty" data-i18n="page.usage_report.chart_empty">page.usage_report.chart_empty</div>
                         </div>
                     </div>
                 </div>
@@ -1302,7 +1402,7 @@
                 <div class="report-filter">
                     <label data-i18n="page.usage_report.filter_label">page.usage_report.filter_label</label>
                     <select id="requestLogModelFilter" onchange="UsageReport.filterByModel()">
-                        <option value="">全部</option>
+                        <option value="" data-i18n="page.usage_report.filter.all">page.usage_report.filter.all</option>
                     </select>
                     <span style="flex:1"></span>
                     <div class="report-pagination">
@@ -1314,7 +1414,7 @@
                 <div class="report-card">
                     <div class="table-wrap">
                         <table class="report-table">
-                            <thead><tr><th data-i18n="page.usage_report.table.time">page.usage_report.table.time</th><th data-i18n="page.usage_report.table.model">page.usage_report.table.model</th><th data-i18n="page.usage_report.table.endpoint">page.usage_report.table.endpoint</th><th data-i18n="report.cache_tokens">report.cache_tokens</th><th data-i18n="page.usage_report.table.prompt_tokens">page.usage_report.table.prompt_tokens</th><th data-i18n="page.usage_report.table.predicted_tokens">page.usage_report.table.predicted_tokens</th><th data-i18n="page.usage_report.table.total_tokens">page.usage_report.table.total_tokens</th><th data-i18n="page.usage_report.table.elapsed">page.usage_report.table.elapsed</th><th data-i18n="page.usage_report.table.prompt_speed">page.usage_report.table.prompt_speed</th><th data-i18n="page.usage_report.table.predicted_speed">page.usage_report.table.predicted_speed</th></tr></thead>
+                            <thead><tr><th data-i18n="page.usage_report.table.time">page.usage_report.table.time</th><th data-i18n="page.usage_report.table.model">page.usage_report.table.model</th><th data-i18n="page.usage_report.table.endpoint">page.usage_report.table.endpoint</th><th data-i18n="report.cache_tokens">report.cache_tokens</th><th data-i18n="page.usage_report.table.prompt_tokens">page.usage_report.table.prompt_tokens</th><th data-i18n="page.usage_report.table.predicted_tokens">page.usage_report.table.predicted_tokens</th><th data-i18n="page.usage_report.table.total_tokens">page.usage_report.table.total_tokens</th><th data-i18n="page.usage_report.table.elapsed">page.usage_report.table.elapsed</th><th data-i18n="page.usage_report.table.prompt_speed">page.usage_report.table.prompt_speed</th><th data-i18n="page.usage_report.table.predicted_speed">page.usage_report.table.predicted_speed</th><th data-i18n="page.usage_report.table.draft_tokens">page.usage_report.table.draft_tokens</th></tr></thead>
                             <tbody id="requestLogBody"></tbody>
                         </table>
                     </div>
@@ -1375,8 +1475,8 @@
                         <div id="basicParamsContainer">
                             <div class="form-group">
                                 <label class="form-label" for="modelId" data-i18n="modal.model_action.model_id">modal.model_action.model_id</label>
-                                <input type="text" class="form-control" id="modelId" name="modelId" readonly style="background-color: #f3f4f6; display: none;">
-                                <input type="text" class="form-control" id="modelName" name="modelName" readonly style="background-color: #f3f4f6;">
+                                <input type="text" class="form-control" id="modelId" name="modelId" readonly style="background-color: var(--disabled-bg); display: none;">
+                                <input type="text" class="form-control" id="modelName" name="modelName" readonly style="background-color: var(--disabled-bg);">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="modelConfigSelect" data-i18n="modal.model_action.config.switch">配置切换</label>
@@ -1514,7 +1614,7 @@
     </div>
 
     <div class="modal" id="hfGgufModal">
-        <div class="modal-content" style="max-width: 1100px; height: 85vh;background-color: #f9fafb;">
+        <div class="modal-content" style="max-width: 1100px; height: 85vh;background-color: var(--bg-color);">
             <div class="modal-header">
                 <h3 class="modal-title"><i class="fas fa-file"></i> <span data-i18n="modal.hf_gguf.title">modal.hf_gguf.title</span></h3>
                 <button class="modal-close" onclick="closeModal('hfGgufModal')">&times;</button>
@@ -1669,14 +1769,84 @@
     <script src="js/download.js"></script>
     
     <script>
+        // --- Theme ---
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('llama-hub-theme', theme);
+            const icon = document.getElementById('themeToggleIcon');
+            const text = document.getElementById('themeToggleText');
+            const btn = document.getElementById('themeToggle');
+            if (icon && text) {
+                if (theme === 'dark') {
+                    icon.className = 'fas fa-sun';
+                    text.setAttribute('data-i18n', 'common.theme.light');
+                    text.textContent = t('common.theme.light', '\u767d\u5929\u6a21\u5f0f');
+                    if (btn) {
+                        btn.setAttribute('data-i18n', 'common.theme.toggle_title_light');
+                        btn.setAttribute('title', t('common.theme.toggle_title_light', '\u5207\u6362\u767d\u5929\u6a21\u5f0f'));
+                    }
+                } else {
+                    icon.className = 'fas fa-moon';
+                    text.setAttribute('data-i18n', 'common.theme.dark');
+                    text.textContent = t('common.theme.dark', '\u591c\u95f4\u6a21\u5f0f');
+                    if (btn) {
+                        btn.setAttribute('data-i18n', 'common.theme.toggle_title');
+                        btn.setAttribute('title', t('common.theme.toggle_title', '\u5207\u6362\u591c\u95f4\u6a21\u5f0f'));
+                    }
+                }
+            }
+        }
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+        }
+        function initTheme() {
+            const saved = localStorage.getItem('llama-hub-theme');
+            if (saved === 'dark' || saved === 'light') {
+                applyTheme(saved);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            } else {
+                applyTheme('light');
+            }
+        }
+
+        // --- Language Toggle ---
+        function updateLangToggle() {
+            const text = document.getElementById('langToggleText');
+            const btn = document.getElementById('langToggle');
+            if (!text || !btn) return;
+            const lang = (window.I18N && window.I18N.lang) || 'zh-CN';
+            if (lang.startsWith('zh')) {
+                text.textContent = t('common.lang.toggle_text_en', 'EN');
+                btn.setAttribute('title', t('common.lang.toggle_title', '\u5207\u6362\u8bed\u8a00'));
+            } else {
+                text.textContent = t('common.lang.toggle_text_cn', '\u4e2d\u6587');
+                btn.setAttribute('title', t('common.lang.toggle_title', 'Switch language'));
+            }
+        }
+        function toggleLang() {
+            const lang = (window.I18N && window.I18N.lang) || 'zh-CN';
+            if (lang.startsWith('zh')) {
+                window.setLang('en-US');
+            } else {
+                window.setLang('zh-CN');
+            }
+        }
+
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
             initWebSocket();
             fetchRemoteNodes();
             initModelSearch();
             loadParamConfig();
             loadBuildInfo();
             updateChatCompletionLinkForDevice();
+        });
+
+        window.addEventListener('i18n:ready', function(e) {
+            updateLangToggle();
         });
 
         function t(key, fallback) {
@@ -1808,7 +1978,7 @@
             const el = document.getElementById(targetInputId);
             if (!el) return;
             ensureDirectoryBrowserModal();
-            
+
             const current = (el.value || '').trim();
             let dirPath = null;
             let fileName = null;
@@ -1821,11 +1991,26 @@
                     fileName = current.substring(sepPos + 1);
                 }
             }
+            let filter = null;
+            if (targetInputId === 'param_spec-draft-model') {
+                filter = '.gguf';
+            } else if (targetInputId === 'param_json-schema-file') {
+                filter = '.json';
+            } else if (targetInputId === 'param_mmproj') {
+                filter = '.gguf';
+            }
+            const modal = document.getElementById('loadModelModal');
+            let nodeId = null;
+            if (modal && modal.__nodeId && modal.__nodeId !== 'local') {
+                nodeId = modal.__nodeId;
+            }
             window.__directoryBrowserState = {
                 targetInputId,
                 currentPath: dirPath || null,
                 currentFile: fileName || null,
-                selectFile: true
+                selectFile: true,
+                filter,
+                nodeId
             };
             directoryBrowserLoad(dirPath || null);
             const confirmBtn = document.getElementById('directoryBrowserConfirmBtn');
@@ -1856,8 +2041,12 @@
             if (fileListEl) fileListEl.innerHTML = `<div class="loading-spinner"><div class="spinner"></div></div>`;
             
             try {
-                const url = state.currentPath
-                    ? `/api/sys/fs/list?path=${encodeURIComponent(state.currentPath)}`
+                const params = [];
+                if (state.currentPath) params.push(`path=${encodeURIComponent(state.currentPath)}`);
+                if (state.filter) params.push(`filter=${encodeURIComponent(state.filter)}`);
+                if (state.nodeId) params.push(`nodeId=${encodeURIComponent(state.nodeId)}`);
+                const url = params.length > 0
+                    ? `/api/sys/fs/list?${params.join('&')}`
                     : `/api/sys/fs/list`;
                 const response = await fetch(url, { method: 'GET' });
                 const payload = await response.json();
@@ -2018,9 +2207,88 @@
             closeModal('directoryBrowserModal');
         }
 
+        // --- JSON editor modal ---
+        function ensureJsonEditorModal() {
+            let modal = document.getElementById('jsonEditorModal');
+            if (modal) return modal;
+
+            modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'jsonEditorModal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width:750px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title"><i class="fas fa-code"></i> <span data-i18n="modal.json_editor.title">modal.json_editor.title</span></h3>
+                        <button class="modal-close" onclick="closeJsonEditor()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="margin-bottom:8px;font-size:13px;color:var(--text-secondary);" data-i18n="modal.json_editor.desc">modal.json_editor.desc</div>
+                        <textarea id="jsonEditorTextarea"
+                            style="width:100%;min-height:300px;font-family:monospace;font-size:14px;resize:vertical;padding:10px;border-radius:0.75rem;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-primary);"
+                            spellcheck="false"></textarea>
+                        <div id="jsonEditorError" style="color:#ff4444;display:none;margin-top:6px;font-size:13px;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeJsonEditor()" data-i18n="common.cancel">common.cancel</button>
+                        <button class="btn btn-primary" onclick="confirmJsonEditor()" data-i18n="common.confirm">common.confirm</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            if (typeof applyI18nToSubtree === 'function') applyI18nToSubtree(modal);
+            return modal;
+        }
+
+        function openJsonEditor(targetInputId) {
+            const el = document.getElementById(targetInputId);
+            if (!el) return;
+            window.__jsonEditorState = { targetInputId: targetInputId };
+
+            const textarea = document.getElementById('jsonEditorTextarea');
+            if (!textarea) {
+                ensureJsonEditorModal();
+            }
+            const ta = document.getElementById('jsonEditorTextarea');
+            ta.value = el.value || '';
+            document.getElementById('jsonEditorError').style.display = 'none';
+            document.getElementById('jsonEditorModal').classList.add('show');
+            setTimeout(function() { ta.focus(); }, 100);
+        }
+
+        function confirmJsonEditor() {
+            const textarea = document.getElementById('jsonEditorTextarea');
+            const errorEl = document.getElementById('jsonEditorError');
+            const raw = textarea.value.trim();
+
+            if (raw) {
+                try {
+                    JSON.parse(raw);
+                } catch (e) {
+                    errorEl.textContent = 'JSON ' + t('modal.json_editor.error_format', 'format error') + ': ' + e.message;
+                    errorEl.style.display = '';
+                    textarea.focus();
+                    return;
+                }
+            }
+
+            const state = window.__jsonEditorState;
+            if (state && state.targetInputId) {
+                const el = document.getElementById(state.targetInputId);
+                if (el) el.value = raw.replace(/[\r\n]+/g, '');
+            }
+            document.getElementById('jsonEditorModal').classList.remove('show');
+            document.getElementById('jsonEditorError').style.display = 'none';
+        }
+
+        function closeJsonEditor() {
+            document.getElementById('jsonEditorModal').classList.remove('show');
+            document.getElementById('jsonEditorError').style.display = 'none';
+        }
+
         window.addEventListener('i18n:ready', function () {
             const modal = document.getElementById('directoryBrowserModal');
             if (modal) applyI18nToSubtree(modal);
+            const jsonModal = document.getElementById('jsonEditorModal');
+            if (jsonModal) applyI18nToSubtree(jsonModal);
         });
 
         function isMobileBrowser() {
@@ -2414,17 +2682,42 @@
                         html += '</select>';
                         html += '</div>';
                         break;
-                        
-                    case 'STRING':
-                    default:
+
+                    case 'JSON':
                         html += '<div class="form-group param-field">';
                         html += labelHtml;
-                        html += `<input type="text" class="form-control" id="${fieldId}" name="${fieldName}" value="${defaultValue}">`;
+                        html += `<div style="display:flex;gap:8px;align-items:stretch;">`;
+                        html += `<input type="text" class="form-control json-param-input" id="${fieldId}" name="${fieldName}" readonly style="flex:1;cursor:pointer;font-family:monospace;font-size:13px;" value="${escapeHtml ? escapeHtml(defaultValue) : defaultValue}" placeholder="${t('modal.json_editor.placeholder', '[JSON] Click the button to edit')}" onclick="openJsonEditor('${fieldId}')">`;
+                        html += `<button type="button" class="btn btn-secondary btn-sm" onclick="openJsonEditor('${fieldId}')" title="${t('modal.json_editor.edit', 'Edit JSON')}"><i class="fas fa-code"></i></button>`;
+                        html += `</div>`;
                         html += '</div>';
+                        break;
+
+                    case 'STRING':
+                    default:
+                        if (fieldName === 'spec-draft-model' || fieldName === 'json-schema-file' || fieldName === 'mmproj') {
+                            const filePlaceholder = fieldName === 'spec-draft-model'
+                                ? t('modal.model_action.param.draft_model_placeholder', '草稿模型 .gguf 文件路径')
+                                : (fieldName === 'mmproj'
+                                    ? t('modal.model_action.param.mmproj_placeholder', 'mmproj .gguf 文件路径')
+                                    : t('modal.model_action.param.json_schema_placeholder', '选择 .json Schema 文件'));
+                            html += '<div class="form-group param-field">';
+                            html += labelHtml;
+                            html += `<div style="display:flex; gap:8px; align-items:stretch;">`;
+                            html += `<input type="text" class="form-control" id="${fieldId}" name="${fieldName}" value="${defaultValue}" style="flex:1;" placeholder="${filePlaceholder}">`;
+                            html += `<button type="button" class="btn btn-secondary btn-sm" onclick="openFileBrowser('${fieldId}')" style="flex-shrink:0;" title="浏览文件"><i class="fas fa-folder-open"></i></button>`;
+                            html += `</div>`;
+                            html += '</div>';
+                        } else {
+                            html += '<div class="form-group param-field">';
+                            html += labelHtml;
+                            html += `<input type="text" class="form-control" id="${fieldId}" name="${fieldName}" value="${defaultValue}">`;
+                            html += '</div>';
+                        }
                         break;
                 }
             }
-            
+
             return html;
         }
 
@@ -3000,7 +3293,7 @@
             var suffix = id ? '-' + id : '';
             var statusEl = document.getElementById('fastfetchStatusText' + suffix);
             var contentEl = document.getElementById('fastfetchContent' + suffix);
-            if (statusEl) statusEl.textContent = '加载中...';
+            if (statusEl) statusEl.textContent = t('page.fastfetch.status.loading', '加载中...');
             var url = '/api/sys/fastfetch';
             if (nodeId) url += '?nodeId=' + encodeURIComponent(nodeId);
             fetch(url)
@@ -3012,19 +3305,19 @@
                     var available = data && data.data && data.data.available;
                     if (contentEl) {
                         if (!available || error) {
-                            contentEl.textContent = 'Fastfetch 不可用: ' + (error || 'unknown error');
+                            contentEl.textContent = t('page.fastfetch.status.unavailable', 'Fastfetch 不可用: ') + (error || 'unknown error');
                         } else if (raw) {
                             contentEl.textContent = raw;
                         } else {
-                            contentEl.textContent = '(无输出)';
+                            contentEl.textContent = t('page.fastfetch.status.no_output', '(无输出)');
                         }
                     }
-                    if (statusEl) statusEl.textContent = '已更新 · ' + timestamp;
+                    if (statusEl) statusEl.textContent = t('page.fastfetch.status.updated', '已更新 \u00b7 ') + timestamp;
                 })
                 .catch(e => {
-                    if (statusEl) statusEl.textContent = '加载失败';
+                    if (statusEl) statusEl.textContent = t('page.fastfetch.status.load_failed', '加载失败');
                     if (contentEl) {
-                        contentEl.textContent = '错误: 无法获取系统信息 - ' + e.message;
+                        contentEl.textContent = t('page.fastfetch.status.error_prefix', '错误: 无法获取系统信息 - ') + e.message;
                     }
                 });
         }
@@ -3034,7 +3327,7 @@
             var suffix = id ? '-' + id : '';
             var statusEl = document.getElementById('gpuStatusText' + suffix);
             var container = document.getElementById('gpuContent' + suffix);
-            if (statusEl) statusEl.textContent = '加载中...';
+            if (statusEl) statusEl.textContent = t('page.fastfetch.status.loading', '加载中...');
             var url = '/api/sys/gpu/status';
             if (nodeId) url += '?nodeId=' + encodeURIComponent(nodeId);
             fetch(url)
@@ -3044,17 +3337,17 @@
                     var gpuData = data && data.data;
                     if (container) {
                         if (!gpuData) {
-                            container.innerHTML = '<div class="gpu-empty">获取GPU状态失败</div>';
+                            container.innerHTML = '<div class="gpu-empty">' + t('page.fastfetch.status.gpu_fetch_failed', '获取GPU状态失败') + '</div>';
                         } else {
                             container.innerHTML = renderGpuStatus(gpuData);
                         }
                     }
-                    if (statusEl) statusEl.textContent = '已更新 · ' + timestamp;
+                    if (statusEl) statusEl.textContent = t('page.fastfetch.status.updated', '已更新 \u00b7 ') + timestamp;
                 })
                 .catch(e => {
-                    if (statusEl) statusEl.textContent = '加载失败';
+                    if (statusEl) statusEl.textContent = t('page.fastfetch.status.load_failed', '加载失败');
                     if (container) {
-                        container.innerHTML = '<div class="gpu-empty">错误: 无法获取GPU状态 - ' + e.message + '</div>';
+                        container.innerHTML = '<div class="gpu-empty">' + t('page.fastfetch.status.gpu_error_prefix', '错误: 无法获取GPU状态 - ') + e.message + '</div>';
                     }
                 });
         }
@@ -3064,7 +3357,7 @@
             var amd = d['amd-smi'] || {};
             var hasAny = nvidia.available || amd.available;
             if (!hasAny) {
-                return '<div class="gpu-empty">未检测到支持的 GPU（nvidia-smi / amd-smi 均不可用）</div>';
+                return '<div class="gpu-empty">' + t('page.fastfetch.status.no_gpu_detected', '未检测到支持的 GPU（nvidia-smi / amd-smi 均不可用）') + '</div>';
             }
             var html = '<div style="font-size:11px;color:#6b7280;margin-bottom:8px;">OS: ' + escapeHtml(d.os || 'unknown') + '</div>';
             if (nvidia) {
@@ -3079,7 +3372,7 @@
         function renderGpuToolBlock(name, info) {
             var avail = !!info.available;
             var badgeCls = avail ? 'available' : 'unavailable';
-            var badgeText = avail ? '可用' : '不可用';
+            var badgeText = avail ? t('common.available', '可用') : t('common.unavailable', '不可用');
             var html = '<div class="gpu-tool-block">';
             html += '<div class="gpu-tool-header">';
             html += '<span class="gpu-tool-badge ' + badgeCls + '">' + badgeText + '</span>';

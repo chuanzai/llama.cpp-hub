@@ -231,36 +231,25 @@ public class SystemController implements BaseController {
 			Map<String, String> params = ParamTool.getQueryParam(request.uri());
 			String in = params.get("path");
 			if (in != null) in = in.trim();
-			
-			int fileLimit = 10;
+
+			String nodeId = params.get("nodeId");
+			if (nodeId != null) nodeId = nodeId.trim();
+			if (nodeId != null && !nodeId.isEmpty() && !"local".equals(nodeId)) {
+				this.handleFsListRemote(ctx, nodeId, request);
+				return;
+			}
+
+			String rawFilter = params.get("filter");
+			if (rawFilter != null) rawFilter = rawFilter.trim();
+			final String filter = (rawFilter != null && !rawFilter.isEmpty()) ? rawFilter.toLowerCase() : null;
+
+			int fileLimit = (filter != null) ? Integer.MAX_VALUE : 10;
 			int dirLimit = 500;
 			
 			Map<String, Object> data = new HashMap<>();
 			
 			if (in == null || in.isEmpty()) {
-				List<Map<String, Object>> dirs = new ArrayList<>();
-				File[] roots = File.listRoots();
-				if (roots != null) {
-					for (File r : roots) {
-						if (r == null) continue;
-						String p = r.getAbsolutePath();
-						Map<String, Object> item = new HashMap<>();
-						item.put("name", p);
-						item.put("path", p);
-						dirs.add(item);
-					}
-				}
-				dirs.sort(Comparator.comparing(o -> String.valueOf(o.getOrDefault("name", "")), String.CASE_INSENSITIVE_ORDER));
-				
-				data.put("path", null);
-				data.put("parent", null);
-				data.put("directories", dirs);
-				data.put("files", new ArrayList<>());
-				data.put("truncatedDirs", false);
-				data.put("truncatedFiles", false);
-				data.put("mode", "roots");
-				LlamaServer.sendJsonResponse(ctx, ApiResponse.success(data));
-				return;
+				in = System.getProperty("user.dir");
 			}
 			
 			Path raw;
@@ -310,6 +299,9 @@ public class SystemController implements BaseController {
 							item.put("name", name);
 							item.put("path", p.toAbsolutePath().normalize().toString());
 							dirs.add(item);
+							return;
+						}
+						if (filter != null && !name.toLowerCase().endsWith(filter)) {
 							return;
 						}
 						Map<String, Object> item = new HashMap<>();
@@ -1733,6 +1725,36 @@ public class SystemController implements BaseController {
 		} catch (Exception e) {
 			logger.warn("[显存估算] 远程节点调用异常: nodeId={}, error={}", nodeId, e.getMessage());
 			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("调用远程节点失败: " + e.getMessage()));
+		}
+	}
+
+	private void handleFsListRemote(ChannelHandlerContext ctx, String nodeId, FullHttpRequest request) {
+		try {
+			String uri = request.uri();
+			int qIdx = uri.indexOf('?');
+			String fullPath;
+			if (qIdx >= 0) {
+				String query = uri.substring(qIdx + 1);
+				String[] pairs = query.split("&");
+				StringBuilder cleanQuery = new StringBuilder();
+				for (String pair : pairs) {
+					if (pair.startsWith("nodeId=")) continue;
+					if (cleanQuery.length() > 0) cleanQuery.append('&');
+					cleanQuery.append(pair);
+				}
+				fullPath = cleanQuery.length() > 0 ? "api/sys/fs/list?" + cleanQuery : "api/sys/fs/list";
+			} else {
+				fullPath = "api/sys/fs/list";
+			}
+			NodeManager.HttpResult result = NodeManager.getInstance().callRemoteApi(nodeId, "GET", fullPath, null);
+			if (result.isSuccess()) {
+				NodeManager.writeHttpResultToChannel(ctx, result, "[文件系统远程]");
+			} else {
+				LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程节点调用失败: code=" + result.getStatusCode()));
+			}
+		} catch (Exception e) {
+			logger.warn("远程文件系统浏览失败: nodeId={}, error={}", nodeId, e.getMessage());
+			LlamaServer.sendJsonResponse(ctx, ApiResponse.error("远程文件系统浏览失败: " + e.getMessage()));
 		}
 	}
 }

@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -160,7 +161,23 @@ public class LlamaServerManager {
 						if (item == null || item.getPath() == null) continue;
 						String p = item.getPath().trim();
 						if (p.isEmpty()) continue;
-						// 判断路径是否存在
+						try {
+							Path candidate = Paths.get(p).toAbsolutePath().normalize();
+							// 拒绝卷根目录
+							Path root = candidate.getRoot();
+							if (root != null && candidate.equals(root)) continue;
+							// 拒绝与已添加路径重叠
+							boolean conflict = false;
+							for (ModelPathDataStruct existing : paths) {
+								String ep = existing.getPath().trim();
+								Path existingPath = Paths.get(ep).toAbsolutePath().normalize();
+								if (candidate.equals(existingPath)) { conflict = true; break; }
+								if (candidate.startsWith(existingPath) || existingPath.startsWith(candidate)) { conflict = true; break; }
+							}
+							if (conflict) continue;
+						} catch (Exception e) {
+							continue;
+						}
 						paths.add(item);
 					}
 				}
@@ -275,14 +292,42 @@ public class LlamaServerManager {
                 List<ModelPathDataStruct> list = new ArrayList<>(this.modelPaths);
                 // 扫描默认目录
                 list.add(new ModelPathDataStruct(LlamaServer.getDefaultModelsPath(), "", ""));
-                
+
+                // 归一化路径，去重（卷根、重复、子目录重叠）
+                List<Path> scannedRoots = new ArrayList<>();
                 for (ModelPathDataStruct root : list) {
                     if (root == null || root.getPath().trim().isEmpty()) continue;
-                    Path modelDir = Paths.get(root.getPath().trim());
+                    Path modelDir;
+                    try {
+                        modelDir = Paths.get(root.getPath().trim()).toAbsolutePath().normalize();
+                    } catch (Exception e) {
+                        continue;
+                    }
                     if (!Files.exists(modelDir) || !Files.isDirectory(modelDir)) {
                         continue;
                     }
-                    try (Stream<Path> paths = Files.walk(modelDir)) {
+                    // 拒绝卷根
+                    Path r = modelDir.getRoot();
+                    if (r != null && modelDir.equals(r)) {
+                        continue;
+                    }
+                    // 跳过是已扫描路径子目录的路径
+                    boolean dominated = false;
+                    for (Path scanned : scannedRoots) {
+                        if (modelDir.equals(scanned) || modelDir.startsWith(scanned)) {
+                            dominated = true;
+                            break;
+                        }
+                    }
+                    if (dominated) continue;
+                    scannedRoots.add(modelDir);
+                }
+
+                // 按路径长度升序排列，短路径优先扫描
+                scannedRoots.sort(Comparator.comparing(p -> p.toString().length()));
+
+                for (Path modelDir : scannedRoots) {
+                    try (Stream<Path> paths = Files.walk(modelDir, 5)) {
                         List<Path> files = paths.filter(Files::isDirectory).sorted().toList();
                         for (Path e : files) {
                             GGUFModel model = this.handleDirectory(e);
@@ -783,6 +828,31 @@ public class LlamaServerManager {
 	}
 	
 	/**
+	 * 通过别名查找对应的 modelId
+	 * @param name 别名（可能含 @ 后缀）
+	 * @return 匹配的 modelId，未找到返回 null
+	 */
+	public String findModelIdByAlias(String name) {
+		if (name == null || name.isBlank()) {
+			return null;
+		}
+		String trimmed = name.trim();
+		String base = trimmed;
+		int at = base.indexOf('@');
+		if (at > 0) {
+			base = base.substring(0, at);
+		}
+		for (GGUFModel m : this.list) {
+			if (m == null) continue;
+			String alias = m.getAlias();
+			if (alias != null && (alias.equals(trimmed) || alias.equals(base))) {
+				return m.getModelId();
+			}
+		}
+		return null;
+	}
+	
+	/**
 	 * 获取下一个可用端口
 	 * 使用PortChecker工具类检查端口是否真正可用
 	 * @return 下一个可用端口号
@@ -1022,6 +1092,9 @@ public class LlamaServerManager {
 				return;
 			}
 			int port = this.getNextAvailablePort();
+			String allArgs = (cmd == null ? "" : cmd.trim()) + (extraParams == null ? "" : " " + extraParams.trim());
+			Integer clientPort = cmdHasFlag(allArgs, "--port") ? extractPortFromCmd(allArgs) : null;
+			int actualPort = clientPort != null ? clientPort : port;
 			String commandStr = this.buildCommandStr(targetModel, port, llamaBinPath, device, mg, enableVision, cmd, extraParams, chatTemplateFilePath);
 			String processName = "llama-server-" + modelId;
 			LlamaCppProcess process = new LlamaCppProcess(processName, commandStr, llamaBinPath);
@@ -1030,35 +1103,46 @@ public class LlamaServerManager {
 
 			CountDownLatch latch = new CountDownLatch(1);
 			AtomicBoolean loadSuccess = new AtomicBoolean(false);
+			AtomicBoolean latchResolved = new AtomicBoolean(false);
 
 			process.setOutputHandler(line -> {
 				LlamaServer.sendConsoleLineEvent(modelId, line);
 				if (line.contains("srv  update_slots: all slots are idle")) {
-					loadSuccess.set(true);
-					latch.countDown();
-				}
-				if (line.contains("main: exiting due to model loading error")) {
-					loadSuccess.set(false);
-					latch.countDown();
-				}
-				if (line.contains("Inferior") && line.contains("detached")) {
-					logger.info("检测到模型进程异常终止: {}", line);
-					loadSuccess.set(false);
-					synchronized (this.processLock) {
-						this.loadedProcesses.remove(modelId);
-						this.modelPorts.remove(modelId);
+					if (latchResolved.compareAndSet(false, true)) {
+						loadSuccess.set(true);
+						latch.countDown();
 					}
-					LlamaServer.sendModelStopEvent(modelId, false, "模型进程异常终止: " + line);
-					latch.countDown();
+					return;
 				}
-				if (line.startsWith("error")) {
-					logger.info("检测到模型进程异常终止: {}", line);
-					loadSuccess.set(false);
-					synchronized (this.processLock) {
-						this.loadedProcesses.remove(modelId);
-						this.modelPorts.remove(modelId);
+				String lower = line.toLowerCase(Locale.ROOT);
+				if (isModelErrorLine(lower)) {
+					logger.warn("检测到模型加载错误: {}", line);
+					if (latchResolved.compareAndSet(false, true)) {
+						loadSuccess.set(false);
+						latch.countDown();
 					}
+				}
+			});
+
+			process.setOnProcessExited(info -> {
+				logger.info("模型进程退出事件: modelId={}, exitCode={}, unexpected={}", modelId, info.exitCode, info.unexpected);
+				if (latchResolved.compareAndSet(false, true)) {
+					// 加载期间进程退出 = 加载失败（不论 unexpected 标志）
+					logger.warn("模型进程在加载期间退出 (exitCode={}): {}", info.exitCode, modelId);
+					loadSuccess.set(false);
 					latch.countDown();
+				} else {
+					if (info.unexpected) {
+						logger.warn("已加载的模型进程意外崩溃 (exitCode={}): {}", info.exitCode, modelId);
+						synchronized (this.processLock) {
+							boolean wasLoaded = this.loadedProcesses.containsKey(modelId);
+							this.loadedProcesses.remove(modelId);
+							this.modelPorts.remove(modelId);
+							if (wasLoaded) {
+								LlamaServer.sendModelStopEvent(modelId, false, "模型进程意外崩溃 (exitCode=" + info.exitCode + ")");
+							}
+						}
+					}
 				}
 			});
 
@@ -1079,7 +1163,7 @@ public class LlamaServerManager {
 				process.stop();
 				return;
 			}
-			LlamaServer.sendModelLoadStartEvent(modelId, port, "模型启动中");
+			LlamaServer.sendModelLoadStartEvent(modelId, actualPort, "模型启动中");
 
 			try {
 				boolean timeout = !latch.await(10, TimeUnit.MINUTES);
@@ -1100,9 +1184,9 @@ public class LlamaServerManager {
 				if (loadSuccess.get()) {
 					synchronized (this.processLock) {
 						this.loadedProcesses.put(modelId, process);
-						this.modelPorts.put(modelId, port);
+						this.modelPorts.put(modelId, actualPort);
 					}
-					LlamaServer.sendModelLoadEvent(modelId, true, "模型加载成功", port);
+					LlamaServer.sendModelLoadEvent(modelId, true, "模型加载成功", actualPort);
 //					// 这里请求一次
 //					try {
 //						JsonObject slotsResponse = this.handleModelSlotsGet(modelId);
@@ -1184,7 +1268,41 @@ public class LlamaServerManager {
 			return this.canceledLoadingModels.contains(modelId);
 		}
 	}
+
+	private static boolean isModelErrorLine(String lower) {
+		return lower.contains("exiting due to model loading error")
+			|| lower.contains("exiting due to http server error")
+			|| lower.contains("error while handling")
+			|| lower.contains("failed to load model")
+			|| lower.contains("error: failed to load")
+			|| lower.contains("error: model loading")
+			|| (lower.contains("error") && lower.contains("gguf"))
+			|| lower.contains("segfault")
+			|| lower.contains("segmentation fault")
+			|| lower.contains("signal 11")
+			|| lower.contains("cannot allocate")
+			|| lower.contains("out of memory")
+			|| lower.contains("cuda error")
+			|| lower.contains("hip error")
+			|| (lower.contains("error") && lower.contains("initialize"))
+			|| (lower.contains("error") && lower.contains("context"));
+	}
 	
+	private static Integer extractPortFromCmd(String cmd) {
+		if (cmd == null || cmd.trim().isEmpty()) {
+			return null;
+		}
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("--port[=\\s]+(\\d+)").matcher(cmd);
+		if (m.find()) {
+			try {
+				return Integer.parseInt(m.group(1));
+			} catch (NumberFormatException e) {
+				return null;
+			}
+		}
+		return null;
+	}
+
 	/**
 	 * 	
 	 * @param targetModel
@@ -1205,7 +1323,6 @@ public class LlamaServerManager {
 			String e = extraParams.trim();
 			allArgs = allArgs.isEmpty() ? e : (allArgs + " " + e);
 		}
-
 		String exeName = isWindows() ? "llama-server.exe" : "llama-server";
 		String exe = Paths.get(llamaBinPath, exeName).toString();
 		sb.append(ParamTool.quoteIfNeeded(exe));
@@ -1214,8 +1331,10 @@ public class LlamaServerManager {
 		String modelFile = Paths.get(targetModel.getPath(), targetModel.getPrimaryModel().getFileName()).toString();
 		sb.append(ParamTool.quoteIfNeeded(modelFile));
 
-		sb.append(" --port ");
-		sb.append(port);
+		if (!cmdHasFlag(allArgs, "--port")) {
+			sb.append(" --port ");
+			sb.append(port);
+		}
 		
 		//	确认启用视觉
 		if(enableVision) {
@@ -1243,12 +1362,16 @@ public class LlamaServerManager {
 		}
 
 		if (cmd != null && !cmd.trim().isEmpty()) {
+			String processed = splitSpecType(cmd.trim());
+			processed = ParamTool.stripFlagWithValue(processed, "--alias");
 			sb.append(' ');
-			sb.append(cmd.trim());
+			sb.append(processed);
 		}
 		if (extraParams != null && !extraParams.trim().isEmpty()) {
+			String processed = splitSpecType(extraParams.trim());
+			processed = ParamTool.stripFlagWithValue(processed, "--alias");
 			sb.append(' ');
-			sb.append(extraParams.trim());
+			sb.append(processed);
 		}
 		if (chatTemplateFilePath != null && !chatTemplateFilePath.trim().isEmpty() && !cmdHasFlag(allArgs, "--chat-template-file") && !cmdHasFlag(allArgs, "--chat-template")) {
 			sb.append(" --chat-template-file ");
@@ -1265,10 +1388,14 @@ public class LlamaServerManager {
 			sb.append(" --slot-save-path ");
 			sb.append(ParamTool.quoteIfNeeded(LlamaServer.getCachePath().toFile().getAbsolutePath()));
 		}
-		if (!cmdHasFlag(allArgs, "--cache-ram")) {
-			sb.append(" --cache-ram -1");
+		//if (!cmdHasFlag(allArgs, "--cache-ram")) {
+			//sb.append(" --cache-ram -1");
+		//}
+		String alias = targetModel.getAlias();
+		if (alias == null || alias.trim().isEmpty()) {
+			alias = targetModel.getModelId();
 		}
-		sb.append(" --alias ").append(targetModel.getModelId());
+		sb.append(" --alias ").append(ParamTool.quoteIfNeeded(alias));
 		
 		sb.append(" --timeout 36000");
 		// 允许任意IP地址访问
@@ -1295,6 +1422,15 @@ public class LlamaServerManager {
 	private static boolean isWindows() {
 		String os = System.getProperty("os.name");
 		return os != null && os.toLowerCase(Locale.ROOT).contains("win");
+	}
+
+	/**
+	 * 将 --spec-type_xxx 拆分为 --spec-type xxx（两个 token）。
+	 * llama-server 要求 --spec-type 与其值作为独立参数。
+	 */
+	private static String splitSpecType(String input) {
+		if (input == null || input.isEmpty()) return input;
+		return input.replace("--spec-type_", "--spec-type ");
 	}
 	
 	//##########################################################################################

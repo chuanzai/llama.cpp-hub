@@ -44,7 +44,7 @@ public class NettySseMcpServer {
 
 	private final Map<String, McpSession> sessions = new ConcurrentHashMap<>();
 	private final int port;
-	private final LegacySseTransportHandler legacySseTransportHandler;
+	private final SseTransportHandler sseTransportHandler;
 	private final StreamableHttpTransportHandler streamableHttpTransportHandler;
 
 	private NioEventLoopGroup bossGroup;
@@ -54,7 +54,7 @@ public class NettySseMcpServer {
 
 	public NettySseMcpServer(int port, McpProtocolHandler protocolHandler) {
 		this.port = port;
-		this.legacySseTransportHandler = new LegacySseTransportHandler(this, protocolHandler);
+		this.sseTransportHandler = new SseTransportHandler(this, protocolHandler);
 		this.streamableHttpTransportHandler = new StreamableHttpTransportHandler(this, protocolHandler);
 	}
 
@@ -123,15 +123,15 @@ public class NettySseMcpServer {
 		}
 	}
 
-	public void handleLegacySseConnect(ChannelHandlerContext ctx, String serviceKey) {
-		this.legacySseTransportHandler.handleConnect(ctx, serviceKey);
+	public void handleSseConnect(ChannelHandlerContext ctx, String serviceKey) {
+		this.sseTransportHandler.handleConnect(ctx, serviceKey);
 	}
 
-	public void openLegacySseStream(ChannelHandlerContext ctx, String serviceKey) {
+	public void openSseStream(ChannelHandlerContext ctx, String serviceKey) {
 		McpSession session = this.createSession(serviceKey, true);
 		session.bindCtx(ctx);
 		String sessionId = session.getId();
-		logger.info("MCP旧版SSE连接建立: serviceKey={}, sessionId={}, remote={}", serviceKey, sessionId, ctx.channel().remoteAddress());
+		logger.info("MCP SSE连接建立: serviceKey={}, sessionId={}, remote={}", serviceKey, sessionId, ctx.channel().remoteAddress());
 		DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
 		this.applySseHeaders(response.headers(), sessionId);
 		ctx.writeAndFlush(response);
@@ -157,8 +157,8 @@ public class NettySseMcpServer {
 		ctx.writeAndFlush(response);
 	}
 
-	public void handleLegacyMessagePost(ChannelHandlerContext ctx, FullHttpRequest request, String serviceKey) {
-		this.legacySseTransportHandler.handleMessagePost(ctx, request, serviceKey);
+	public void handleSseMessagePost(ChannelHandlerContext ctx, FullHttpRequest request, String serviceKey) {
+		this.sseTransportHandler.handleMessagePost(ctx, request, serviceKey);
 	}
 
 	public void handleStreamablePost(ChannelHandlerContext ctx, FullHttpRequest request, String serviceKey) {
@@ -209,9 +209,9 @@ public class NettySseMcpServer {
 		return sessionId == null ? null : sessionId.trim();
 	}
 
-	public McpSession createSession(String serviceKey, boolean legacySse) {
+	public McpSession createSession(String serviceKey, boolean sse) {
 		String sessionId = UUID.randomUUID().toString().replace("-", "");
-		McpSession session = new McpSession(sessionId, serviceKey, null, legacySse);
+		McpSession session = new McpSession(sessionId, serviceKey, null, sse);
 		this.sessions.put(sessionId, session);
 		return session;
 	}
@@ -223,7 +223,7 @@ public class NettySseMcpServer {
 				return false;
 			}
 			session.clearCtxIfMatches(ctx);
-			return session.isLegacySse();
+			return session.isSse();
 		});
 	}
 
@@ -325,7 +325,7 @@ public class NettySseMcpServer {
 		}
 		ChannelHandlerContext sessionCtx = session.getCtx();
 		if (sessionCtx == null || !sessionCtx.channel().isActive()) {
-			if (session.isLegacySse()) {
+			if (session.isSse()) {
 				this.sessions.remove(sessionId);
 			} else {
 				session.clearCtx();
@@ -335,7 +335,7 @@ public class NettySseMcpServer {
 		ByteBuf buf = Unpooled.copiedBuffer(payload, StandardCharsets.UTF_8);
 		sessionCtx.writeAndFlush(new DefaultHttpContent(buf)).addListener((ChannelFutureListener) future -> {
 			if (!future.isSuccess()) {
-				if (session.isLegacySse()) {
+				if (session.isSse()) {
 					this.sessions.remove(sessionId);
 				} else {
 					session.clearCtx();

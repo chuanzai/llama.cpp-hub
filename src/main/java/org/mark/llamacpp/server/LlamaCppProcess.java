@@ -16,8 +16,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -47,10 +49,14 @@ public class LlamaCppProcess {
 	private Thread outputThread;
 	private Thread errorThread;
 	private final AtomicBoolean isRunning = new AtomicBoolean(false);
+	private final AtomicBoolean stopRequested = new AtomicBoolean(false);
 	private Consumer<String> outputHandler;
+	private Consumer<ProcessExitInfo> onProcessExited;
 	private BufferedWriter stdwriter;
 	private int ctxSize;
 	private int slotNum;
+	private CompletableFuture<Void> exitFuture;
+	private final AtomicReference<ProcessExitInfo> exitInfoRef = new AtomicReference<>();
 
 	public LlamaCppProcess(String name, String cmd, String llamaBinPath) {
 		this.name = name;
@@ -64,6 +70,10 @@ public class LlamaCppProcess {
 
 	public void setOutputHandler(Consumer<String> outputHandler) {
 		this.outputHandler = outputHandler;
+	}
+
+	public void setOnProcessExited(Consumer<ProcessExitInfo> onProcessExited) {
+		this.onProcessExited = onProcessExited;
 	}
 
 	public void setCtxSize(int ctxSize) {
@@ -167,6 +177,10 @@ public class LlamaCppProcess {
 
 			this.isRunning.set(true);
 			this.startOutputReaders();
+			this.exitFuture = this.process.onExit().thenApply(v -> {
+				this.onProcessExit();
+				return null;
+			});
 			return true;
 
 		} catch (IOException e) {
@@ -193,6 +207,9 @@ public class LlamaCppProcess {
 		if (!this.isRunning.getAndSet(false)) {
 			return false;
 		}
+
+		// 标记为预期退出
+		this.stopRequested.set(true);
 
 		// 1. 关闭 stdin writer — 防止向已死进程写入时触发 SIGPIPE
 		closeQuietly(this.stdwriter);
@@ -424,7 +441,6 @@ public class LlamaCppProcess {
 					safeHandler.accept(line);
 				}
 			} catch (IOException e) {
-				// 流关闭导致的异常，只在真正运行中时警告
 				if (this.isRunning.get()) {
 					logger.warn("读取进程输出流时发生错误: {}", e.getMessage());
 				}
@@ -443,6 +459,31 @@ public class LlamaCppProcess {
 				}
 			}
 		});
+	}
+
+	/**
+	 * Called by Process.onExit() when the process terminates.
+	 * This is the authoritative source for process exit detection.
+	 */
+	private synchronized void onProcessExit() {
+		if (this.exitInfoRef.get() != null) {
+			return;
+		}
+		ProcessExitInfo info = new ProcessExitInfo();
+		info.unexpected = !this.stopRequested.get();
+		try {
+			info.exitCode = this.process.exitValue();
+		} catch (IllegalArgumentException e) {
+			info.exitCode = -1;
+		}
+		this.exitInfoRef.set(info);
+		if (this.onProcessExited != null) {
+			try {
+				this.onProcessExited.accept(info);
+			} catch (Exception e) {
+				logger.error("onProcessExited 回调抛出异常: {}", e.getMessage());
+			}
+		}
 	}
 
 	// ========================================================================
@@ -474,6 +515,14 @@ public class LlamaCppProcess {
 			return this.process.exitValue();
 		}
 		return null;
+	}
+
+	public CompletableFuture<Void> getExitFuture() {
+		return this.exitFuture;
+	}
+
+	public ProcessExitInfo getExitInfo() {
+		return this.exitInfoRef.get();
 	}
 
 	// ========================================================================
@@ -509,7 +558,7 @@ public class LlamaCppProcess {
 		}
 
 		StringBuilder cur = new StringBuilder();
-		boolean allowSingle = !isWindows();
+		boolean allowSingle = true;
 		boolean inSingle = false;
 		boolean inDouble = false;
 
@@ -532,6 +581,14 @@ public class LlamaCppProcess {
 				if (i + 1 < s.length()) {
 					char n = s.charAt(i + 1);
 					if (n == '\'') {
+						cur.append(n);
+						i++;
+						continue;
+					}
+					if (n == '"') {
+						if (isWindows()) {
+							cur.append(c);
+						}
 						cur.append(n);
 						i++;
 						continue;
@@ -569,5 +626,13 @@ public class LlamaCppProcess {
 	private static boolean isWindows() {
 		String os = System.getProperty("os.name");
 		return os != null && os.toLowerCase(Locale.ROOT).contains("win");
+	}
+
+	/**
+	 * Process exit information passed to the onProcessExited callback.
+	 */
+	public static class ProcessExitInfo {
+		public int exitCode = -1;
+		public boolean unexpected = true;
 	}
 }

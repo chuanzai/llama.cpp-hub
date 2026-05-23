@@ -3,8 +3,15 @@
 
     let tokenSummaryData = [];
     let requestLogsData = [];
+    let dailyTokenData = [];
     let filteredLogs = [];
     let currentPage = 1;
+
+    // Tooltip state for each chart
+    let tokenBars = [];
+    let dailyBars = [];
+    let tokenHoverIdx = -1;
+    let dailyHoverIdx = -1;
 
     function t(key, fallback) {
         if (typeof window.t === 'function') return window.t(key, fallback);
@@ -16,7 +23,14 @@
     }
 
     async function load() {
-        await Promise.all([fetchTokenSummary(), fetchRequestLogs()]);
+        await initMonthSelectors();
+        await Promise.all([fetchTokenSummary(), fetchRequestLogs(), fetchDailyTokens()]);
+
+        // Bind change events for month selectors
+        const yearSel = document.getElementById('dailyYearSelect');
+        const monthSel = document.getElementById('dailyMonthSelect');
+        if (yearSel) yearSel.onchange = fetchDailyTokens;
+        if (monthSel) monthSel.onchange = fetchDailyTokens;
     }
 
     async function fetchTokenSummary() {
@@ -32,6 +46,73 @@
             tokenSummaryData = [];
         }
         renderTokenSummary();
+    }
+
+    async function fetchDailyTokens() {
+        const year = document.getElementById('dailyYearSelect').value;
+        const month = document.getElementById('dailyMonthSelect').value;
+        try {
+            const resp = await fetch('/api/report/daily-tokens?year=' + year + '&month=' + month);
+            const result = await resp.json();
+            if (!result || !result.success) {
+                dailyTokenData = [];
+            } else {
+                dailyTokenData = result.data || [];
+            }
+        } catch (e) {
+            dailyTokenData = [];
+        }
+        updateDailyTitle(year, month);
+        renderDailyChart();
+    }
+
+    async function initMonthSelectors() {
+        const yearSel = document.getElementById('dailyYearSelect');
+        const monthSel = document.getElementById('dailyMonthSelect');
+        if (!yearSel || !monthSel) return;
+
+        // Populate months
+        monthSel.innerHTML = '';
+        for (let m = 1; m <= 12; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m + '月';
+            monthSel.appendChild(opt);
+        }
+
+        // Fetch available years
+        try {
+            const resp = await fetch('/api/report/available-years');
+            const result = await resp.json();
+            if (result && result.success && Array.isArray(result.data)) {
+                yearSel.innerHTML = '';
+                for (const y of result.data) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y + '年';
+                    yearSel.appendChild(opt);
+                }
+            }
+        } catch (e) {
+            // Fallback to current year
+            yearSel.innerHTML = '';
+            const opt = document.createElement('option');
+            opt.value = new Date().getFullYear();
+            opt.textContent = new Date().getFullYear() + '年';
+            yearSel.appendChild(opt);
+        }
+
+        // Default to current year/month
+        const now = new Date();
+        yearSel.value = now.getFullYear();
+        monthSel.value = now.getMonth() + 1;
+    }
+
+    function updateDailyTitle(year, month) {
+        const titleEl = document.getElementById('dailyChartTitle');
+        if (titleEl) {
+            titleEl.textContent = year + '年' + month + '月用量';
+        }
     }
 
     async function fetchRequestLogs() {
@@ -50,76 +131,11 @@
         applyFilter();
     }
 
-    function renderTokenSummary() {
-        const canvasEl = document.getElementById('tokenChartCanvas');
-        const emptyEl = document.getElementById('tokenChartEmpty');
-        const wrapEl = document.getElementById('tokenChartWrap');
-        const stats = document.getElementById('tokenSummaryStats');
-        const body = document.getElementById('tokenSummaryBody');
-        if (!body) return;
-
-        let totalModels = tokenSummaryData.length;
-        let totalPrompt = 0;
-        let totalPredicted = 0;
-        let totalCache = 0;
-        let cardHtml = '';
-        const sorted = tokenSummaryData.slice().sort((a, b) => (b.totalTokens || 0) - (a.totalTokens || 0));
-        for (const m of sorted) {
-            totalPrompt += m.totalPromptTokens || 0;
-            totalPredicted += m.totalPredictedTokens || 0;
-            totalCache += m.totalCacheTokens || 0;
-            cardHtml += '<div class="token-card">'
-                + '<div class="tk-model">' + escapeHtml(m.modelId || '') + '</div>'
-                + '<div class="tk-tokens">'
-                + '<span>输入 ' + (m.totalPromptTokens || 0).toLocaleString() + '</span>'
-                + '<span>输出 ' + (m.totalPredictedTokens || 0).toLocaleString() + '</span>'
-                + '<span class="tk-cache">' + t('report.cache_label', '缓存') + ' ' + (m.totalCacheTokens || 0).toLocaleString() + '</span>'
-                + '</div>'
-                + '</div>';
-        }
-        if (!cardHtml) {
-            cardHtml = '<div class="empty">' + t('page.usage_report.chart_empty', '暂无数据') + '</div>';
-        }
-        body.innerHTML = cardHtml;
-
-        stats.innerHTML = ''
-            + '<div class="stat-card"><div class="stat-value">' + totalModels + '</div><div class="stat-label">' + t('page.usage_report.stats.models_with_records', '有记录的模型') + '</div></div>'
-            + '<div class="stat-card"><div class="stat-value">' + totalPrompt.toLocaleString() + '</div><div class="stat-label">' + t('page.usage_report.stats.total_prompt', '总输入 Token') + '</div></div>'
-            + '<div class="stat-card"><div class="stat-value">' + totalPredicted.toLocaleString() + '</div><div class="stat-label">' + t('page.usage_report.stats.total_predicted', '总输出 Token') + '</div></div>'
-            + '<div class="stat-card"><div class="stat-value">' + totalCache.toLocaleString() + '</div><div class="stat-label">' + t('report.total_cache', '总缓存命中 Token') + '</div></div>';
-
-        if (!canvasEl || !emptyEl || !wrapEl) return;
-        if (!tokenSummaryData.length) {
-            emptyEl.style.display = 'flex';
-            return;
-        }
-        emptyEl.style.display = 'none';
-
-        const data = tokenSummaryData.slice().sort((a, b) => (b.totalTokens || 0) - (a.totalTokens || 0));
-        const ctx = canvasEl.getContext('2d');
-        const rect = wrapEl.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        const w = rect.width - 16, h = rect.height - 16;
-        if (w <= 0 || h <= 0) return;
-        canvasEl.width = w * dpr; canvasEl.height = h * dpr;
-        canvasEl.style.width = w + 'px'; canvasEl.style.height = h + 'px';
-        ctx.scale(dpr, dpr);
-
-        const count = data.length;
-        const pad = { top: 14, bottom: 30, left: 64, right: 14 };
-        const cw = w - pad.left - pad.right;
-        const ch = h - pad.top - pad.bottom;
-        const barW = Math.min(cw / count * 0.28, 28);
-        const gap = barW * 0.4;
-        const gw = barW * 2 + gap;
-
-        let maxV = 0;
-        data.forEach(d => maxV = Math.max(maxV, d.totalPromptTokens || 0, d.totalPredictedTokens || 0));
-        maxV = Math.ceil(Math.max(maxV * 1.15, 100));
-
-        const style = getComputedStyle(wrapEl);
-        const tc = style.getPropertyValue('--text-secondary').trim() || '#999';
-        const bc = style.getPropertyValue('--border-color').trim() || '#333';
+    // --- Shared tooltip draw helper (overlaid bars) ---
+    function drawBarsChart(ctx, w, h, pad, cw, ch, bars, maxV, colors, tc, bc, hoverIdx, labelFn, valFn) {
+        const barW = bars[0] ? bars[0].barW : 0;
+        const gw = bars[0] ? bars[0].gw : 0;
+        const count = bars.length;
 
         ctx.clearRect(0, 0, w, h);
 
@@ -138,21 +154,55 @@
             ctx.globalAlpha = 1;
         }
 
-        // bars
-        const colors = ['rgba(99,102,241,0.8)', 'rgba(16,185,129,0.8)'];
+        // bars (overlaid: larger drawn behind, smaller on top)
         for (let i = 0; i < count; i++) {
-            const d = data[i];
-            const pf = d.totalPromptTokens || 0;
-            const dg = d.totalPredictedTokens || 0;
-            const x = pad.left + (cw / count) * i + (cw / count - gw) / 2;
+            const b = bars[i];
+            const pf = valFn(b, 0);
+            const dg = valFn(b, 1);
+            const x = b.x;
+            const pfH = (pf / maxV) * ch;
+            const dgH = (dg / maxV) * ch;
 
-            ctx.fillStyle = colors[0];
-            ctx.fillRect(x, pad.top + ch - (pf / maxV) * ch, barW, (pf / maxV) * ch);
-            ctx.fillStyle = colors[1];
-            ctx.fillRect(x + barW + gap, pad.top + ch - (dg / maxV) * ch, barW, (dg / maxV) * ch);
+            // Skip drawing bars when both values are 0
+            if (pf === 0 && dg === 0) {
+                ctx.fillStyle = tc; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                ctx.fillText(labelFn(i), x + gw / 2, pad.top + ch + 4);
+                continue;
+            }
+
+            // Highlight bar group on hover
+            if (i === hoverIdx) {
+                ctx.fillStyle = 'rgba(99,102,241,0.15)';
+                ctx.fillRect(x - 2, pad.top, gw + 4, ch);
+            }
+
+            // Draw larger bar behind, smaller on top (both solid color + border)
+            if (pf >= dg) {
+                ctx.fillStyle = colors[0];
+                ctx.fillRect(x, pad.top + ch - pfH, barW, pfH);
+                ctx.strokeStyle = colors[0].replace('0.8', '1');
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(x, pad.top + ch - pfH, barW, pfH);
+                ctx.fillStyle = colors[1];
+                ctx.fillRect(x, pad.top + ch - dgH, barW, dgH);
+                ctx.strokeStyle = colors[1].replace('0.8', '1');
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(x, pad.top + ch - dgH, barW, dgH);
+            } else {
+                ctx.fillStyle = colors[1];
+                ctx.fillRect(x, pad.top + ch - dgH, barW, dgH);
+                ctx.strokeStyle = colors[1].replace('0.8', '1');
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(x, pad.top + ch - dgH, barW, dgH);
+                ctx.fillStyle = colors[0];
+                ctx.fillRect(x, pad.top + ch - pfH, barW, pfH);
+                ctx.strokeStyle = colors[0].replace('0.8', '1');
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(x, pad.top + ch - pfH, barW, pfH);
+            }
 
             ctx.fillStyle = tc; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-            ctx.fillText(i + 1, x + gw / 2, pad.top + ch + 4);
+            ctx.fillText(labelFn(i), x + gw / 2, pad.top + ch + 4);
         }
 
         // legend
@@ -162,19 +212,321 @@
         ctx.fillStyle = colors[1]; ctx.fillRect(w - 42, 2, 9, 9);
         ctx.fillStyle = tc; ctx.fillText('Predicted', w - 29, 1);
 
-        // marker legend
-        const parentCol = wrapEl.parentNode;
-        let legendEl = parentCol.querySelector('.chart-marker-legend');
-        if (!legendEl) {
-            legendEl = document.createElement('div');
-            legendEl.className = 'chart-marker-legend';
-            parentCol.appendChild(legendEl);
+        // tooltip
+        if (hoverIdx >= 0 && hoverIdx < count) {
+            const b = bars[hoverIdx];
+            const lines = [b.label, 'Prompt: ' + b.promptVal.toLocaleString(), 'Predicted: ' + b.predictedVal.toLocaleString()];
+            ctx.font = '11px sans-serif';
+            const lineH = 15;
+            const padX = 8, padY = 5;
+            let maxTW = 0;
+            for (const l of lines) {
+                const tw = ctx.measureText(l).width;
+                if (tw > maxTW) maxTW = tw;
+            }
+            const tw = maxTW + padX * 2;
+            const th = lineH * lines.length + padY * 2;
+            let tx = b.x + b.barW + 10;
+            let ty = b.y - th - 6;
+            if (tx + tw > w - 4) tx = b.x - tw - 6;
+            if (ty < 2) ty = b.y + 10;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.82)';
+            ctx.beginPath();
+            roundRect(ctx, tx, ty, tw, th, 4);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            roundRect(ctx, tx, ty, tw, th, 4);
+            ctx.stroke();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(lines[0], tx + padX, ty + padY);
+            ctx.font = '10px sans-serif';
+            ctx.fillStyle = colors[0].replace('0.8', '1');
+            ctx.fillText('P: ' + b.promptVal.toLocaleString(), tx + padX, ty + padY + lineH);
+            ctx.fillStyle = colors[1].replace('0.8', '1');
+            ctx.fillText('O: ' + b.predictedVal.toLocaleString(), tx + padX, ty + padY + lineH * 2);
         }
-        let legendHtml = '';
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    }
+
+    // --- Per-model chart ---
+    function renderTokenSummary() {
+        const canvasEl = document.getElementById('tokenChartCanvas');
+        const emptyEl = document.getElementById('tokenChartEmpty');
+        const wrapEl = document.getElementById('tokenChartWrap');
+        const stats = document.getElementById('tokenSummaryStats');
+        const body = document.getElementById('tokenSummaryBody');
+        if (!body) return;
+
+        let totalModels = tokenSummaryData.length;
+        let totalPrompt = 0;
+        let totalPredicted = 0;
+        let totalCache = 0;
+        let totalDraftTokens = 0;
+        let totalDraftAccepted = 0;
+        let cardHtml = '';
+        const sorted = tokenSummaryData.slice().sort((a, b) => (b.totalTokens || 0) - (a.totalTokens || 0));
+        sorted.forEach((m, idx) => {
+            totalPrompt += m.totalPromptTokens || 0;
+            totalPredicted += m.totalPredictedTokens || 0;
+            totalCache += m.totalCacheTokens || 0;
+            totalDraftTokens += m.totalDraftTokens || 0;
+            totalDraftAccepted += m.totalDraftAccepted || 0;
+            let draftHtml = '';
+            if (m.totalDraftTokens > 0) {
+                const draftPct = m.totalDraftTokens > 0 ? ((m.totalDraftAccepted || 0) / m.totalDraftTokens * 100).toFixed(1) : '0.0';
+                draftHtml = '<span class="tk-draft">' + t('report.draft_label', '投机') + ' ' + (m.totalDraftAccepted || 0) + '/' + m.totalDraftTokens + ' (' + draftPct + '%)</span>';
+            }
+            cardHtml += '<div class="token-card">'
+                + '<div class="tk-model"><span class="tk-badge">' + (idx + 1) + '</span>' + escapeHtml(m.modelId || '') + '</div>'
+                + '<div class="tk-tokens">'
+                + '<span>' + t('report.prompt_label', '输入') + ' ' + (m.totalPromptTokens || 0).toLocaleString() + '</span>'
+                + '<span>' + t('report.output_label', '输出') + ' ' + (m.totalPredictedTokens || 0).toLocaleString() + '</span>'
+                + '<span class="tk-cache">' + t('report.cache_label', '缓存') + ' ' + (m.totalCacheTokens || 0).toLocaleString() + '</span>'
+                + draftHtml
+                + '</div>'
+                + '</div>';
+        });
+        if (!cardHtml) {
+            cardHtml = '<div class="empty">' + t('page.usage_report.chart_empty', '暂无数据') + '</div>';
+        }
+        body.innerHTML = cardHtml;
+
+        stats.innerHTML = ''
+            + '<div class="stat-card"><div class="stat-value">' + totalModels + '</div><div class="stat-label">' + t('page.usage_report.stats.models_with_records', '有记录的模型') + '</div></div>'
+            + '<div class="stat-card"><div class="stat-value">' + totalPrompt.toLocaleString() + '</div><div class="stat-label">' + t('page.usage_report.stats.total_prompt', '总输入 Token') + '</div></div>'
+            + '<div class="stat-card"><div class="stat-value">' + totalPredicted.toLocaleString() + '</div><div class="stat-label">' + t('page.usage_report.stats.total_predicted', '总输出 Token') + '</div></div>'
+            + '<div class="stat-card"><div class="stat-value">' + totalCache.toLocaleString() + '</div><div class="stat-label">' + t('report.total_cache', '总缓存命中 Token') + '</div></div>'
+            + (totalDraftTokens > 0 ? '<div class="stat-card"><div class="stat-value">' + totalDraftAccepted.toLocaleString() + '/' + totalDraftTokens.toLocaleString() + '</div><div class="stat-label">' + t('report.total_draft', '总投机解码') + '</div></div>' : '');
+
+        if (!canvasEl || !emptyEl || !wrapEl) return;
+
+        const data = tokenSummaryData.slice().sort((a, b) => (b.totalTokens || 0) - (a.totalTokens || 0));
+        const ctx = canvasEl.getContext('2d');
+        const rect = wrapEl.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const w = rect.width - 16, h = rect.height - 16;
+        if (w <= 0 || h <= 0) return;
+        canvasEl.width = w * dpr; canvasEl.height = h * dpr;
+        canvasEl.style.width = w + 'px'; canvasEl.style.height = h + 'px';
+        ctx.scale(dpr, dpr);
+
+        if (!tokenSummaryData.length) {
+            ctx.clearRect(0, 0, w, h);
+            emptyEl.style.display = 'flex';
+            tokenBars = [];
+            canvasEl.onmousemove = null;
+            canvasEl.onmouseleave = null;
+            return;
+        }
+        emptyEl.style.display = 'none';
+
+        const count = data.length;
+        const pad = { top: 14, bottom: 30, left: 64, right: 14 };
+        const cw = w - pad.left - pad.right;
+        const ch = h - pad.top - pad.bottom;
+        const barW = Math.min(cw / count * 0.45, 28);
+        const gw = barW;
+
+        let maxV = 0;
+        data.forEach(d => maxV = Math.max(maxV, d.totalPromptTokens || 0, d.totalPredictedTokens || 0));
+        maxV = Math.ceil(Math.max(maxV * 1.15, 100));
+
+        const style = getComputedStyle(wrapEl);
+        const tc = style.getPropertyValue('--text-secondary').trim() || '#999';
+        const bc = style.getPropertyValue('--border-color').trim() || '#333';
+        const colors = ['rgba(99,102,241,0.8)', 'rgba(16,185,129,0.8)'];
+
+        // Build bar geometry (overlaid)
+        tokenBars = [];
         for (let i = 0; i < count; i++) {
-            legendHtml += '<span class="ml-item"><span class="ml-marker">' + (i + 1) + '</span> ' + escapeHtml(data[i].modelId || '#' + (i + 1)) + '</span>';
+            const d = data[i];
+            const pf = d.totalPromptTokens || 0;
+            const dg = d.totalPredictedTokens || 0;
+            const x = pad.left + (cw / count) * i + (cw / count - gw) / 2;
+            const pfH = (pf / maxV) * ch;
+            const dgH = (dg / maxV) * ch;
+            const barTop = pad.top + ch - Math.max(pfH, dgH);
+            tokenBars.push({
+                x: x, y: barTop, w: gw, h: Math.max(pfH, dgH),
+                barW: barW, gw: gw,
+                label: d.modelId || ('#' + (i + 1)),
+                promptVal: pf, predictedVal: dg
+            });
         }
-        legendEl.innerHTML = legendHtml;
+
+        // Draw
+        drawBarsChart(ctx, w, h, pad, cw, ch, tokenBars, maxV, colors, tc, bc, tokenHoverIdx,
+            function(i) { return i + 1; },
+            function(b, which) { return which === 0 ? b.promptVal : b.predictedVal; }
+        );
+
+        // Mouse events (hover entire column slot for easier hit)
+        canvasEl.onmousemove = function (e) {
+            const r = canvasEl.getBoundingClientRect();
+            const mx = e.clientX - r.left;
+            const my = e.clientY - r.top;
+            let found = -1;
+            const slotW = cw / count;
+            for (let i = 0; i < tokenBars.length; i++) {
+                const slotX = pad.left + slotW * i;
+                if (mx >= slotX && mx <= slotX + slotW && my >= pad.top && my <= pad.top + ch) {
+                    found = i;
+                    break;
+                }
+            }
+            if (found !== tokenHoverIdx) {
+                tokenHoverIdx = found;
+                drawBarsChart(ctx, w, h, pad, cw, ch, tokenBars, maxV, colors, tc, bc, tokenHoverIdx,
+                    function(i) { return i + 1; },
+                    function(b, which) { return which === 0 ? b.promptVal : b.predictedVal; }
+                );
+            }
+        };
+        canvasEl.onmouseleave = function () {
+            if (tokenHoverIdx !== -1) {
+                tokenHoverIdx = -1;
+                drawBarsChart(ctx, w, h, pad, cw, ch, tokenBars, maxV, colors, tc, bc, tokenHoverIdx,
+                    function(i) { return i + 1; },
+                    function(b, which) { return which === 0 ? b.promptVal : b.predictedVal; }
+                );
+            }
+        };
+    }
+
+    // --- Daily chart ---
+    function renderDailyChart() {
+        const canvasEl = document.getElementById('dailyChartCanvas');
+        const emptyEl = document.getElementById('dailyChartEmpty');
+        const wrapEl = document.getElementById('dailyChartWrap');
+        if (!canvasEl || !emptyEl || !wrapEl) return;
+
+        const ctx = canvasEl.getContext('2d');
+        const rect = wrapEl.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const w = rect.width - 16, h = rect.height - 16;
+        if (w <= 0 || h <= 0) return;
+        canvasEl.width = w * dpr; canvasEl.height = h * dpr;
+        canvasEl.style.width = w + 'px'; canvasEl.style.height = h + 'px';
+        ctx.scale(dpr, dpr);
+
+        if (!dailyTokenData.length) {
+            ctx.clearRect(0, 0, w, h);
+            emptyEl.style.display = 'flex';
+            dailyBars = [];
+            canvasEl.onmousemove = null;
+            canvasEl.onmouseleave = null;
+            return;
+        }
+
+        const hasData = dailyTokenData.some(d => d.promptTokens > 0 || d.predictedTokens > 0);
+        if (!hasData) {
+            ctx.clearRect(0, 0, w, h);
+            emptyEl.style.display = 'flex';
+            dailyBars = [];
+            canvasEl.onmousemove = null;
+            canvasEl.onmouseleave = null;
+            return;
+        }
+        emptyEl.style.display = 'none';
+
+        const data = dailyTokenData;
+        const count = data.length;
+        const pad = { top: 14, bottom: 30, left: 64, right: 14 };
+        const cw = w - pad.left - pad.right;
+        const ch = h - pad.top - pad.bottom;
+        const barW = Math.min(cw / count * 0.25, 18);
+        const gw = barW;
+
+        let maxV = 0;
+        data.forEach(d => maxV = Math.max(maxV, d.promptTokens || 0, d.predictedTokens || 0));
+        maxV = Math.ceil(Math.max(maxV * 1.15, 100));
+
+        const style = getComputedStyle(wrapEl);
+        const tc = style.getPropertyValue('--text-secondary').trim() || '#999';
+        const bc = style.getPropertyValue('--border-color').trim() || '#333';
+        const colors = ['rgba(99,102,241,0.8)', 'rgba(16,185,129,0.8)'];
+
+        // Build bar geometry (overlaid)
+        dailyBars = [];
+        for (let i = 0; i < count; i++) {
+            const d = data[i];
+            const pf = d.promptTokens || 0;
+            const dg = d.predictedTokens || 0;
+            const x = pad.left + (cw / count) * i + (cw / count - gw) / 2;
+            const pfH = (pf / maxV) * ch;
+            const dgH = (dg / maxV) * ch;
+            const barTop = pad.top + ch - Math.max(pfH, dgH);
+            dailyBars.push({
+                x: x, y: barTop, w: gw, h: Math.max(pfH, dgH),
+                barW: barW, gw: gw,
+                label: d.date ? d.date.substring(5) : '',
+                promptVal: pf, predictedVal: dg
+            });
+        }
+
+        // X-axis label: only first, middle, last
+        const midIdx = Math.floor(count / 2);
+        function dailyLabelFn(i) {
+            if (i === 0 || i === midIdx || i === count - 1) return dailyBars[i].label;
+            return '';
+        }
+
+        // Draw
+        drawBarsChart(ctx, w, h, pad, cw, ch, dailyBars, maxV, colors, tc, bc, dailyHoverIdx,
+            dailyLabelFn,
+            function(b, which) { return which === 0 ? b.promptVal : b.predictedVal; }
+        );
+
+        // Mouse events (hover entire column slot for easier hit)
+        canvasEl.onmousemove = function (e) {
+            const r = canvasEl.getBoundingClientRect();
+            const mx = e.clientX - r.left;
+            const my = e.clientY - r.top;
+            let found = -1;
+            const slotW = cw / count;
+            for (let i = 0; i < dailyBars.length; i++) {
+                const slotX = pad.left + slotW * i;
+                if (mx >= slotX && mx <= slotX + slotW && my >= pad.top && my <= pad.top + ch) {
+                    found = i;
+                    break;
+                }
+            }
+            if (found !== dailyHoverIdx) {
+                dailyHoverIdx = found;
+                drawBarsChart(ctx, w, h, pad, cw, ch, dailyBars, maxV, colors, tc, bc, dailyHoverIdx,
+                    dailyLabelFn,
+                    function(b, which) { return which === 0 ? b.promptVal : b.predictedVal; }
+                );
+            }
+        };
+        canvasEl.onmouseleave = function () {
+            if (dailyHoverIdx !== -1) {
+                dailyHoverIdx = -1;
+                drawBarsChart(ctx, w, h, pad, cw, ch, dailyBars, maxV, colors, tc, bc, dailyHoverIdx,
+                    dailyLabelFn,
+                    function(b, which) { return which === 0 ? b.promptVal : b.predictedVal; }
+                );
+            }
+        };
     }
 
     function buildModelFilter() {
@@ -238,6 +590,7 @@
 
         let html = '';
         for (const r of pageData) {
+            const draftDisplay = r.draftTokens > 0 ? (r.draftAccepted || 0) + '/' + r.draftTokens : '-';
             html += '<tr>'
                 + '<td>' + formatTime(r.startTime) + '</td>'
                 + '<td>' + escapeHtml(r.modelId || '') + '</td>'
@@ -249,10 +602,11 @@
                 + '<td>' + (r.elapsedMs || 0).toLocaleString() + '</td>'
                 + '<td>' + formatNum(r.promptPerSecond) + '</td>'
                 + '<td>' + formatNum(r.predictedPerSecond) + '</td>'
+                + '<td>' + escapeHtml(draftDisplay) + '</td>'
                 + '</tr>';
         }
         if (!html) {
-            html = '<tr><td class="empty" colspan="10">' + t('page.usage_report.no_request_logs', '暂无请求记录') + '</td></tr>';
+            html = '<tr><td class="empty" colspan="11">' + t('page.usage_report.no_request_logs', '暂无请求记录') + '</td></tr>';
         }
         body.innerHTML = html;
     }
@@ -265,7 +619,7 @@
             panel.classList.toggle('active', panel.id === 'panel-' + tabName);
         });
         if (tabName === 'token-summary') {
-            setTimeout(renderTokenSummary, 50);
+            setTimeout(() => { renderTokenSummary(); renderDailyChart(); }, 50);
         }
     }
 

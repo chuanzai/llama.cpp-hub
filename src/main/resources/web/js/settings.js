@@ -1497,6 +1497,7 @@
                     editingModelPath = null;
                     if (typeof window.closeModal === 'function') window.closeModal('addModelPathModal');
                     loadModelPathList();
+                    if (typeof window.loadModels === 'function') window.loadModels();
                 } else {
                     showToast(t('toast.error', '错误'), data.error || t('toast.model_path.update_failed', '更新失败'), 'error');
                 }
@@ -1514,6 +1515,7 @@
                 editingModelPath = null;
                 if (typeof window.closeModal === 'function') window.closeModal('addModelPathModal');
                 loadModelPathList();
+                if (typeof window.loadModels === 'function') window.loadModels();
             } else {
                 showToast(t('toast.error', '错误'), data.error || t('toast.model_path.add_failed', '添加失败'), 'error');
             }
@@ -1536,6 +1538,7 @@
             if (data.success) {
                 showToast(t('toast.success', '成功'), t('page.model_path.removed', '路径已删除'), 'success');
                 loadModelPathList();
+                if (typeof window.loadModels === 'function') window.loadModels();
             } else {
                 showToast(t('toast.error', '错误'), data.error || t('common.delete_failed', '删除失败'), 'error');
             }

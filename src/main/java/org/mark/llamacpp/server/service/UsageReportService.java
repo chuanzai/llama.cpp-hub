@@ -2,14 +2,22 @@ package org.mark.llamacpp.server.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import org.mark.llamacpp.server.struct.DailyTokenEntry;
 import org.mark.llamacpp.server.struct.RequestLogEntry;
 import org.mark.llamacpp.server.struct.TokenSummaryEntry;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 public class UsageReportService {
@@ -53,6 +61,8 @@ public class UsageReportService {
 						 entry.setTotalTokens(promptN + predictedN);
 						 entry.setTotalPromptMs(getJsonDouble(obj, "prompt_ms", 0));
 						 entry.setTotalPredictedMs(getJsonDouble(obj, "predicted_ms", 0));
+						 entry.setTotalDraftTokens(getJsonLong(obj, "draft_n", 0));
+						 entry.setTotalDraftAccepted(getJsonLong(obj, "draft_n_accepted", 0));
 						 result.add(entry);
 					 } catch (Exception e) {
 						 e.printStackTrace();
@@ -95,6 +105,75 @@ public class UsageReportService {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		result.sort((a, b) -> Long.compare(b.getStartTime(), a.getStartTime()));
+		return result;
+	}
+
+	/**
+	 * 基于请求日志，聚合指定月份的每日 Token 用量。
+	 */
+	public List<DailyTokenEntry> getDailyTokenUsage(int year, int month) {
+		LocalDate firstDay = LocalDate.of(year, month, 1);
+		LocalDate lastDay = firstDay.withDayOfMonth(firstDay.lengthOfMonth());
+
+		List<RequestLogEntry> logs = getRequestLogs();
+		if (logs.isEmpty()) {
+			return buildEmptyMonthlyEntries(firstDay, lastDay);
+		}
+
+		Map<String, DailyTokenEntry> dayMap = new LinkedHashMap<>();
+		for (RequestLogEntry log : logs) {
+			if (log.getStartTime() <= 0) continue;
+			LocalDate day = Instant.ofEpochMilli(log.getStartTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+			if (day.isBefore(firstDay) || day.isAfter(lastDay)) continue;
+			DailyTokenEntry entry = dayMap.get(day.toString());
+			if (entry == null) {
+				entry = new DailyTokenEntry();
+				entry.setDate(day.toString());
+				dayMap.put(day.toString(), entry);
+			}
+			entry.setPromptTokens(entry.getPromptTokens() + log.getPromptTokens());
+			entry.setPredictedTokens(entry.getPredictedTokens() + log.getPredictedTokens());
+			entry.setCacheTokens(entry.getCacheTokens() + log.getCacheTokens());
+		}
+
+		List<DailyTokenEntry> result = new ArrayList<>();
+		for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
+			String key = d.toString();
+			if (dayMap.containsKey(key)) {
+				result.add(dayMap.get(key));
+			} else {
+				DailyTokenEntry empty = new DailyTokenEntry();
+				empty.setDate(key);
+				result.add(empty);
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * 获取有数据的所有年份（去重，升序）。
+	 */
+	public List<Integer> getAvailableYears() {
+		List<RequestLogEntry> logs = getRequestLogs();
+		Set<Integer> years = new TreeSet<>();
+		for (RequestLogEntry log : logs) {
+			if (log.getStartTime() <= 0) continue;
+			LocalDate day = Instant.ofEpochMilli(log.getStartTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+			years.add(day.getYear());
+		}
+		// 确保包含当前年份
+		years.add(LocalDate.now().getYear());
+		return new ArrayList<>(years);
+	}
+
+	private List<DailyTokenEntry> buildEmptyMonthlyEntries(LocalDate firstDay, LocalDate lastDay) {
+		List<DailyTokenEntry> result = new ArrayList<>();
+		for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
+			DailyTokenEntry entry = new DailyTokenEntry();
+			entry.setDate(d.toString());
+			result.add(entry);
+		}
 		return result;
 	}
 
@@ -122,6 +201,8 @@ public class UsageReportService {
 			entry.setTotalTokens(promptN + predictedN);
 			entry.setPromptPerSecond(getJsonDouble(timing, "prompt_per_second", 0));
 			entry.setPredictedPerSecond(getJsonDouble(timing, "predicted_per_second", 0));
+			entry.setDraftTokens(getJsonInt(timing, "draft_n", 0));
+			entry.setDraftAccepted(getJsonInt(timing, "draft_n_accepted", 0));
 		}
 
 		return entry;

@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Easy Chat</title>
+  <title data-i18n="page.chat.main.empty.title">Easy Chat</title>
   <link rel="stylesheet" href="./index.css">
-  <link rel="stylesheet" href="/css/github.min.css">
+  <link rel="stylesheet" href="/css/github.min.css" id="hljsTheme">
+  <link rel="stylesheet" href="/css/github-dark.min.css" id="hljsThemeDark" disabled>
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
       <div class="brand">
-        <a class="brand-left" href="../index.html" aria-label="返回首页">
+        <a class="brand-left" href="../index.html" aria-label="返回首页" data-i18n-attr="aria-label" data-i18n="page.chat.main.sidebar.back_home">
           <div class="brand-mark">
-            <img src="../llama1-icon-transparent.png" alt="llama.cpp-hub" class="brand-mark-image">
+            <img src="../llama1-icon-transparent.png" alt="llama.cpp-hub" class="brand-mark-image" data-i18n-attr="alt" data-i18n="app.title">
           </div>
           <div class="brand-copy">
             <h1>llama.cpp-hub</h1>
@@ -21,21 +22,23 @@
         </a>
       </div>
 
-      <button id="newChatBtn" class="primary-button full" type="button">＋ 新建对话</button>
+      <button id="newChatBtn" class="primary-button full" type="button" data-i18n="page.chat.main.sidebar.new_chat">＋ 新建对话</button>
 
       <div class="search-wrap">
         <span>⌕</span>
-        <input id="searchInput" type="text" placeholder="搜索会话">
+        <input id="searchInput" type="text" placeholder="搜索会话" data-i18n-attr="placeholder" data-i18n="page.chat.main.sidebar.search_placeholder">
       </div>
 
-      <div class="sidebar-label">会话列表</div>
+      <button id="themeToggleChat" class="ghost-button full" type="button" style="gap:8px;font-size:13px;" onclick="toggleTheme()" data-i18n="page.chat.main.theme.dark">🌙 夜间模式</button>
+
+      <div class="sidebar-label" data-i18n="page.chat.main.sidebar.conversation_list">会话列表</div>
       <ul id="conversationList" class="conversation-list"></ul>
     </aside>
 
     <main class="main">
       <header class="topbar">
         <div class="topbar-leading">
-          <button id="sidebarToggleBtn" class="icon-button sidebar-toggle" type="button" aria-label="打开会话列表" aria-expanded="false">☰</button>
+          <button id="sidebarToggleBtn" class="icon-button sidebar-toggle" type="button" aria-label="打开会话列表" aria-expanded="false" data-i18n-attr="aria-label" data-i18n="page.chat.main.sidebar.open_list">☰</button>
           <div class="topbar-copy">
             <h2 id="conversationTitle">新对话</h2>
           </div>
@@ -53,10 +56,10 @@
               <path d="M10 9.5h4"/>
             </svg>
           </button>
-          <button id="exportBtn" class="ghost-button toolbar-icon-button" type="button" aria-label="导出对话" title="导出对话">
+          <button id="exportBtn" class="ghost-button toolbar-icon-button" type="button" aria-label="导出对话" title="导出对话" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.topbar.export">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </button>
-          <button id="clearBtn" class="ghost-button toolbar-icon-button" type="button" aria-label="清空对话" title="清空对话">
+          <button id="clearBtn" class="ghost-button toolbar-icon-button" type="button" aria-label="清空对话" title="清空对话" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.topbar.clear">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
           </button>
           <button id="settingsBtn" class="icon-button" type="button" aria-label="设置">⚙</button>
@@ -67,12 +70,12 @@
         <div class="chat-column">
           <div id="emptyState" class="empty-state">
             <div class="empty-card">
-              <h3>Easy Chat</h3>
-              <p>用于快速验证、测试模型，输入文字、粘贴图片或上传文件开始对话，也可以直接选择下方的快捷提示。<br>温馨提示：对于复杂的功能需求，还请更换其它聊天前端。</p>
+              <h3 data-i18n="page.chat.main.empty.title">Easy Chat</h3>
+              <p><span data-i18n="page.chat.main.empty.desc1">用于快速验证、测试模型，输入文字、粘贴图片或上传文件开始对话，也可以直接选择下方的快捷提示。</span><br><span data-i18n="page.chat.main.empty.desc2">温馨提示：对于复杂的功能需求，还请更换其它聊天前端。</span></p>
               <div class="empty-hints">
-                <button class="empty-hint" data-hint="用简单的语言解释一下什么是大语言模型">什么是大语言模型？</button>
-                <button class="empty-hint" data-hint="帮我写一个 Python 快速排序算法">写一个快速排序</button>
-                <button class="empty-hint" data-hint="给我推荐 5 本经典的科幻小说，并简要说明推荐理由">推荐科幻小说</button>
+                <button class="empty-hint" data-hint="用简单的语言解释一下什么是大语言模型" data-i18n="page.chat.main.empty.hint_llm">什么是大语言模型？</button>
+                <button class="empty-hint" data-hint="帮我写一个 Python 快速排序算法" data-i18n="page.chat.main.empty.hint_sort">写一个快速排序</button>
+                <button class="empty-hint" data-hint="给我推荐 5 本经典的科幻小说，并简要说明推荐理由" data-i18n="page.chat.main.empty.hint_scifi">推荐科幻小说</button>
               </div>
             </div>
           </div>
@@ -86,19 +89,19 @@
           <div id="dropZone" class="drop-zone hidden">
             <div class="drop-zone-inner">
               <svg class="drop-zone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              <span>拖放文件到此处</span>
+              <span data-i18n="page.chat.main.composer.drop_zone">拖放文件到此处</span>
             </div>
           </div>
-          <textarea id="promptInput" class="composer-input" placeholder="输入消息，支持粘贴图片或添加文本文件…"></textarea>
+          <textarea id="promptInput" class="composer-input" placeholder="输入消息，支持粘贴图片或添加文本文件…" data-i18n-attr="placeholder" data-i18n="page.chat.main.composer.placeholder"></textarea>
           <input id="imageInput" class="hidden" type="file" multiple>
           <div class="composer-bar">
             <div class="composer-left">
-              <select id="conversationAssistantSelect" class="model-select composer-assistant-select" aria-label="当前会话使用的助手"></select>
-              <select id="modelSelect" class="model-select" aria-label="选择模型"></select>
+              <select id="conversationAssistantSelect" class="model-select composer-assistant-select" aria-label="当前会话使用的助手" data-i18n-attr="aria-label" data-i18n="page.chat.main.composer.assistant_select"></select>
+              <select id="modelSelect" class="model-select" aria-label="选择模型" data-i18n-attr="aria-label" data-i18n="page.chat.main.composer.model_select"></select>
             </div>
             <div class="composer-right">
-              <button id="refreshModelsBtn" class="icon-button" type="button" aria-label="刷新模型" title="刷新模型">↻</button>
-              <button id="imageUploadBtn" class="image-upload-btn" type="button" aria-label="Upload files" title="Upload files">
+              <button id="refreshModelsBtn" class="icon-button" type="button" aria-label="刷新模型" title="刷新模型" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.composer.refresh">↻</button>
+              <button id="imageUploadBtn" class="image-upload-btn" type="button" aria-label="Upload files" title="Upload files" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.composer.upload_files">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path>
                   <path d="M14 2v5h5"></path>
@@ -107,7 +110,7 @@
                 </svg>
               </button>
               <div id="thinkingMenuWrap" class="menu-wrap">
-                <button id="thinkingToggleBtn" class="icon-button thinking-toggle" type="button" aria-label="思维链" aria-haspopup="menu" aria-expanded="false" title="思维链">
+                <button id="thinkingToggleBtn" class="icon-button thinking-toggle" type="button" aria-label="思维链" aria-haspopup="menu" aria-expanded="false" title="思维链" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.composer.thinking">
                   <svg class="thinking-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M9 18h6"/>
                     <path d="M10 22h4"/>
@@ -118,20 +121,20 @@
                   </svg>
                 </button>
                 <div id="thinkingMenu" class="thinking-menu" role="menu" aria-hidden="true">
-                  <button class="thinking-menu-item" type="button" data-thinking-value="true" role="menuitemradio">开启</button>
-                  <button class="thinking-menu-item" type="button" data-thinking-value="false" role="menuitemradio">关闭</button>
+                  <button class="thinking-menu-item" type="button" data-thinking-value="true" role="menuitemradio" data-i18n="page.chat.main.composer.thinking_on">开启</button>
+                  <button class="thinking-menu-item" type="button" data-thinking-value="false" role="menuitemradio" data-i18n="page.chat.main.composer.thinking_off">关闭</button>
                 </div>
               </div>
-              <button id="micRecorderBtn" class="icon-button toolbar-icon-button" type="button" aria-label="录音" title="录音">
+              <button id="micRecorderBtn" class="icon-button toolbar-icon-button" type="button" aria-label="录音" title="录音" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.composer.record">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
               </button>
-              <button id="sendBtn" class="icon-button send-toggle-button" type="button" aria-label="发送" title="发送">
+              <button id="sendBtn" class="icon-button send-toggle-button" type="button" aria-label="发送" title="发送" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.composer.send">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
             </div>
           </div>
         </div>
-        <div class="composer-hint">支持粘贴图片、拖放文件或上传文本文件，回车发送，Shift + 回车换行</div>
+        <div class="composer-hint" data-i18n="page.chat.main.composer.hint">支持粘贴图片、拖放文件或上传文本文件，回车发送，Shift + 回车换行</div>
       </section>
     </main>
   </div>
@@ -142,19 +145,19 @@
   <div id="audioRecorderModal" class="audio-recorder-modal" aria-hidden="true">
     <div class="audio-recorder-panel">
       <div class="audio-recorder-head">
-        <span>🎤 录音</span>
-        <button id="audioRecorderCloseBtn" type="button" aria-label="关闭" class="audio-recorder-close">&times;</button>
+        <span data-i18n="page.chat.main.recorder.title">🎤 录音</span>
+        <button id="audioRecorderCloseBtn" type="button" aria-label="关闭" class="audio-recorder-close" data-i18n-attr="aria-label" data-i18n="page.chat.main.lightbox.close">&times;</button>
       </div>
       <div class="audio-recorder-body">
         <!-- audio-recorder-idle placeholder -->
-        <div id="audioRecorderStartBtn" class="audio-recorder-record-btn" type="button">开始录音</div>
+        <div id="audioRecorderStartBtn" class="audio-recorder-record-btn" type="button" data-i18n="page.chat.main.recorder.start">开始录音</div>
         <!-- audio-recorder-recording -->
-        <div id="audioRecorderStatus" class="audio-recorder-status">正在录音…</div>
+        <div id="audioRecorderStatus" class="audio-recorder-status" data-i18n="page.chat.main.recorder.recording">正在录音…</div>
         <!-- audio-recorder-complete -->
         <div id="audioRecorderComplete" class="audio-recorder-complete">
-          <button id="audioRecorderDoneBtn" class="audio-recorder-action-btn audio-recorder-confirm" type="button">完成</button>
+          <button id="audioRecorderDoneBtn" class="audio-recorder-action-btn audio-recorder-confirm" type="button" data-i18n="page.chat.main.recorder.done">完成</button>
         </div>
-        <div class="audio-recorder-hint">点击"开始录音"后，点击"停止录音"结束。支持 WAV / MP3 / M4A / OGG / FLAC 格式</div>
+        <div class="audio-recorder-hint" data-i18n="page.chat.main.recorder.hint">点击"开始录音"后，点击"停止录音"结束。支持 WAV / MP3 / M4A / OGG / FLAC 格式</div>
       </div>
     </div>
   </div>
@@ -162,7 +165,7 @@
   <div id="settingsDrawer" class="drawer" aria-hidden="true">
     <div class="drawer-panel settings-dialog">
       <div class="drawer-head">
-        <h3>
+        <h3 data-i18n="page.chat.main.settings.title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-3px;margin-right:6px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           设置
         </h3>
@@ -171,15 +174,15 @@
 
       <div class="settings-body">
         <nav class="settings-tabs" role="tablist">
-          <button class="settings-tab active" data-settings-tab="general" role="tab" type="button">
+          <button class="settings-tab active" data-settings-tab="general" role="tab" type="button" data-i18n="page.chat.main.settings.tab.general">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             通用
           </button>
-          <button class="settings-tab" data-settings-tab="sampling" role="tab" type="button">
+          <button class="settings-tab" data-settings-tab="sampling" role="tab" type="button" data-i18n="page.chat.main.settings.tab.sampling">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
             采样参数
           </button>
-          <button class="settings-tab" data-settings-tab="mcp" role="tab" type="button">
+          <button class="settings-tab" data-settings-tab="mcp" role="tab" type="button" data-i18n="page.chat.main.settings.tab.mcp">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><path d="M9 9l12-2"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
             MCP
           </button>
@@ -188,28 +191,28 @@
         <div class="settings-content">
           <div class="settings-section active" data-settings-section="general">
             <div class="settings-group">
-              <div class="settings-group-title">当前助手设置</div>
+              <div class="settings-group-title" data-i18n="page.chat.main.settings.general.title">当前助手设置</div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="settingsConversationAssistantSelect">当前会话使用的助手</label>
+                  <label for="settingsConversationAssistantSelect" data-i18n="page.chat.main.settings.general.assistant_label">当前会话使用的助手</label>
                 </div>
-                <p class="settings-field-desc">切换后，本会话会立即改用所选助手的提示词和采样参数，模型选择保持全局不变</p>
-                <select id="settingsConversationAssistantSelect" class="drawer-input" aria-label="设置面板中的当前会话助手"></select>
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.general.assistant_desc">切换后，本会话会立即改用所选助手的提示词和采样参数，模型选择保持全局不变</p>
+                <select id="settingsConversationAssistantSelect" class="drawer-input" aria-label="设置面板中的当前会话助手" data-i18n-attr="aria-label" data-i18n="page.chat.main.settings.general.assistant_aria"></select>
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="assistantNameInput">助手名称</label>
+                  <label for="assistantNameInput" data-i18n="page.chat.main.settings.general.name_label">助手名称</label>
                 </div>
-                <p class="settings-field-desc">用于区分不同任务助手，例如“代码评审”“翻译”“写作”</p>
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.general.name_desc">用于区分不同任务助手，例如“代码评审”“翻译”“写作”</p>
                 <div class="assistant-name-row">
                   <div class="settings-inline-actions assistant-inline-actions">
-                    <button id="newAssistantBtn" class="icon-button assistant-action-button" type="button" aria-label="新建助手" title="新建助手">
+                    <button id="newAssistantBtn" class="icon-button assistant-action-button" type="button" aria-label="新建助手" title="新建助手" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.settings.general.new_assistant">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M12 5v14"/>
                         <path d="M5 12h14"/>
                       </svg>
                     </button>
-                    <button id="deleteAssistantBtn" class="icon-button assistant-action-button" type="button" aria-label="删除当前助手" title="删除当前助手">
+                    <button id="deleteAssistantBtn" class="icon-button assistant-action-button" type="button" aria-label="删除当前助手" title="删除当前助手" data-i18n-attr="aria-label,title" data-i18n="page.chat.main.settings.general.delete_assistant">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M3 6h18"/>
                         <path d="M8 6V4h8v2"/>
@@ -219,25 +222,25 @@
                       </svg>
                     </button>
                   </div>
-                  <input id="assistantNameInput" class="drawer-input" type="text" maxlength="40" placeholder="例如：代码助手">
+                  <input id="assistantNameInput" class="drawer-input" type="text" maxlength="40" placeholder="例如：代码助手" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.general.name_placeholder">
                 </div>
                 <p id="assistantUsageHint" class="settings-field-desc"></p>
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="systemPromptInput">系统提示词</label>
+                  <label for="systemPromptInput" data-i18n="page.chat.main.settings.general.system_label">系统提示词</label>
                 </div>
-                <p class="settings-field-desc">定义当前助手的行为和角色，会在本会话使用该助手时发送</p>
-                <textarea id="systemPromptInput" class="drawer-textarea" placeholder="例如：你是一个专业、准确、简洁的中文助手。"></textarea>
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.general.system_desc">定义当前助手的行为和角色，会在本会话使用该助手时发送</p>
+                <textarea id="systemPromptInput" class="drawer-textarea" placeholder="例如：你是一个专业、准确、简洁的中文助手。" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.general.system_placeholder"></textarea>
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label>流式输出</label>
+                  <label data-i18n="page.chat.main.settings.general.stream_label">流式输出</label>
                 </div>
                 <label class="settings-toggle">
                   <div class="settings-toggle-text">
-                    <span>启用流式输出</span>
-                    <span class="settings-field-desc">逐字显示模型回复，提供更好的交互体验</span>
+                    <span data-i18n="page.chat.main.settings.general.stream_toggle">启用流式输出</span>
+                    <span class="settings-field-desc" data-i18n="page.chat.main.settings.general.stream_desc">逐字显示模型回复，提供更好的交互体验</span>
                   </div>
                   <span class="toggle-switch">
                     <input id="streamToggle" type="checkbox" checked>
@@ -250,91 +253,91 @@
 
           <div class="settings-section" data-settings-section="sampling">
             <div class="settings-group">
-              <div class="settings-group-title">当前助手采样参数</div>
+              <div class="settings-group-title" data-i18n="page.chat.main.settings.sampling.title">当前助手采样参数</div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="maxTokensInput">Max Tokens</label>
+                  <label for="maxTokensInput" data-i18n="page.chat.main.settings.sampling.max_tokens">Max Tokens</label>
                 </div>
-                <p class="settings-field-desc">限制单次回复的最大 token 数量，留空时使用服务端默认值</p>
-                <input id="maxTokensInput" class="drawer-input" type="number" step="1" min="1" placeholder="默认">
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.max_tokens_desc">限制单次回复的最大 token 数量，留空时使用服务端默认值</p>
+                <input id="maxTokensInput" class="drawer-input" type="number" step="1" min="1" placeholder="默认" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.default_placeholder">
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="temperatureInput">温度 (Temperature)</label>
+                  <label for="temperatureInput" data-i18n="page.chat.main.settings.sampling.temperature">温度 (Temperature)</label>
                 </div>
-                <p class="settings-field-desc">控制生成文本的随机性。值越高输出越随机，值越低输出越集中确定</p>
-                <input id="temperatureInput" class="drawer-input" type="number" step="0.1" min="0" max="2" placeholder="默认">
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.temperature_desc">控制生成文本的随机性。值越高输出越随机，值越低输出越集中确定</p>
+                <input id="temperatureInput" class="drawer-input" type="number" step="0.1" min="0" max="2" placeholder="默认" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.default_placeholder">
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="topPInput">Top P</label>
+                  <label for="topPInput" data-i18n="page.chat.main.settings.sampling.top_p">Top P</label>
                 </div>
-                <p class="settings-field-desc">核采样阈值，只在累计概率达到阈值的候选 token 中采样</p>
-                <input id="topPInput" class="drawer-input" type="number" step="0.05" min="0" max="1" placeholder="默认">
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.top_p_desc">核采样阈值，只在累计概率达到阈值的候选 token 中采样</p>
+                <input id="topPInput" class="drawer-input" type="number" step="0.05" min="0" max="1" placeholder="默认" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.default_placeholder">
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="topKInput">Top K</label>
+                  <label for="topKInput" data-i18n="page.chat.main.settings.sampling.top_k">Top K</label>
                 </div>
-                <p class="settings-field-desc">每一步只保留概率最高的前 K 个候选 token 参与采样</p>
-                <input id="topKInput" class="drawer-input" type="number" step="1" min="0" max="2048" placeholder="默认">
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.top_k_desc">每一步只保留概率最高的前 K 个候选 token 参与采样</p>
+                <input id="topKInput" class="drawer-input" type="number" step="1" min="0" max="2048" placeholder="默认" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.default_placeholder">
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="minPInput">Min P</label>
+                  <label for="minPInput" data-i18n="page.chat.main.settings.sampling.min_p">Min P</label>
                 </div>
-                <p class="settings-field-desc">过滤掉概率低于阈值的 token，降低低概率噪声输出</p>
-                <input id="minPInput" class="drawer-input" type="number" step="0.01" min="0" max="1" placeholder="默认">
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.min_p_desc">过滤掉概率低于阈值的 token，降低低概率噪声输出</p>
+                <input id="minPInput" class="drawer-input" type="number" step="0.01" min="0" max="1" placeholder="默认" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.default_placeholder">
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="presencePenaltyInput">Presence Penalty</label>
+                  <label for="presencePenaltyInput" data-i18n="page.chat.main.settings.sampling.presence_penalty">Presence Penalty</label>
                 </div>
-                <p class="settings-field-desc">对已经出现过的 token 施加惩罚，鼓励模型引入新内容</p>
-                <input id="presencePenaltyInput" class="drawer-input" type="number" step="0.1" min="-2" max="2" placeholder="默认">
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.presence_penalty_desc">对已经出现过的 token 施加惩罚，鼓励模型引入新内容</p>
+                <input id="presencePenaltyInput" class="drawer-input" type="number" step="0.1" min="-2" max="2" placeholder="默认" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.default_placeholder">
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="repeatPenaltyInput">Repeat Penalty</label>
+                  <label for="repeatPenaltyInput" data-i18n="page.chat.main.settings.sampling.repeat_penalty">Repeat Penalty</label>
                 </div>
-                <p class="settings-field-desc">抑制近期重复 token，减少模型连续复述相同内容</p>
-                <input id="repeatPenaltyInput" class="drawer-input" type="number" step="0.05" min="0" max="10" placeholder="默认">
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.repeat_penalty_desc">抑制近期重复 token，减少模型连续复述相同内容</p>
+                <input id="repeatPenaltyInput" class="drawer-input" type="number" step="0.05" min="0" max="10" placeholder="默认" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.default_placeholder">
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="frequencyPenaltyInput">Frequency Penalty</label>
+                  <label for="frequencyPenaltyInput" data-i18n="page.chat.main.settings.sampling.frequency_penalty">Frequency Penalty</label>
                 </div>
-                <p class="settings-field-desc">根据 token 出现频率增加惩罚，降低模板化和高频重复表达</p>
-                <input id="frequencyPenaltyInput" class="drawer-input" type="number" step="0.1" min="-2" max="2" placeholder="默认">
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.frequency_penalty_desc">根据 token 出现频率增加惩罚，降低模板化和高频重复表达</p>
+                <input id="frequencyPenaltyInput" class="drawer-input" type="number" step="0.1" min="-2" max="2" placeholder="默认" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.default_placeholder">
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label for="stopSequencesInput">Stop Sequences</label>
+                  <label for="stopSequencesInput" data-i18n="page.chat.main.settings.sampling.stop_sequences">Stop Sequences</label>
                 </div>
-                <p class="settings-field-desc">每行填写一个停止序列，命中后模型会停止继续生成</p>
-                <textarea id="stopSequencesInput" class="drawer-textarea" placeholder="每行一个 stop 序列"></textarea>
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.sampling.stop_sequences_desc">每行填写一个停止序列，命中后模型会停止继续生成</p>
+                <textarea id="stopSequencesInput" class="drawer-textarea" placeholder="每行一个 stop 序列" data-i18n-attr="placeholder" data-i18n="page.chat.main.settings.sampling.stop_sequences_placeholder"></textarea>
               </div>
             </div>
           </div>
 
           <div class="settings-section" data-settings-section="mcp">
             <div class="settings-group">
-              <div class="settings-group-title">MCP</div>
+              <div class="settings-group-title" data-i18n="page.chat.main.settings.mcp.title">MCP</div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label>MCP 服务配置</label>
+                  <label data-i18n="page.chat.main.settings.mcp.config_label">MCP 服务配置</label>
                 </div>
-                <p class="settings-field-desc">支持 SSE 与 Streamable HTTP，可在新增弹窗中通过 JSON 配置 URL、请求头、超时参数等信息</p>
+                <p class="settings-field-desc" data-i18n="page.chat.main.settings.mcp.config_desc">支持 SSE 与 Streamable HTTP，可在新增弹窗中通过 JSON 配置 URL、请求头、超时参数等信息</p>
                 <div class="mcp-connect-row">
-                  <button id="mcpOpenAddDialogBtn" class="primary-button" type="button">新增 MCP 服务器</button>
-                  <button id="mcpRefreshBtn" class="ghost-button" type="button">刷新</button>
+                  <button id="mcpOpenAddDialogBtn" class="primary-button" type="button" data-i18n="page.chat.main.settings.mcp.add_server">新增 MCP 服务器</button>
+                  <button id="mcpRefreshBtn" class="ghost-button" type="button" data-i18n="page.chat.main.settings.mcp.refresh">刷新</button>
                 </div>
               </div>
               <div class="settings-field">
                 <div class="settings-field-header">
-                  <label>MCP 工具</label>
+                  <label data-i18n="page.chat.main.settings.mcp.tools_label">MCP 工具</label>
                 </div>
-                <p id="mcpSummary" class="settings-field-desc">当前助手未启用 MCP 工具</p>
+                <p id="mcpSummary" class="settings-field-desc" data-i18n="page.chat.main.settings.mcp.tools_empty">当前助手未启用 MCP 工具</p>
                 <div id="mcpServerList" class="mcp-server-list"></div>
               </div>
             </div>
@@ -345,7 +348,7 @@
       <div class="drawer-footer">
         <span id="settingsStorageHint" class="settings-storage-hint"></span>
         <div class="drawer-actions">
-          <button id="saveSettingsBtn" class="primary-button" type="button">保存设置</button>
+          <button id="saveSettingsBtn" class="primary-button" type="button" data-i18n="page.chat.main.settings.save">保存设置</button>
         </div>
       </div>
     </div>
@@ -354,38 +357,40 @@
   <div id="mcpAddDialog" class="mcp-dialog-backdrop" aria-hidden="true">
     <div class="mcp-dialog" role="dialog" aria-modal="true" aria-labelledby="mcpAddDialogTitle">
       <div class="mcp-dialog-head">
-        <h4 id="mcpAddDialogTitle">新增 MCP 服务器</h4>
+        <h4 id="mcpAddDialogTitle" data-i18n="page.chat.main.mcp_dialog.title">新增 MCP 服务器</h4>
         <button id="mcpDialogCloseBtn" class="icon-button mcp-dialog-close" type="button" aria-label="关闭">✕</button>
       </div>
       <div class="mcp-dialog-body">
-        <p class="settings-field-desc">仅支持 Streamable HTTP 与 SSE。JSON 中 transport 仅允许 streamable_http 或 sse。</p>
+        <p class="settings-field-desc" data-i18n="page.chat.main.mcp_dialog.desc">仅支持 Streamable HTTP 与 SSE。JSON 中 transport 仅允许 streamable_http 或 sse。</p>
         <div class="settings-field">
           <div class="settings-field-header">
-            <label for="mcpServerNameInput">服务器名称</label>
+            <label for="mcpServerNameInput" data-i18n="page.chat.main.mcp_dialog.name_label">服务器名称</label>
           </div>
-          <input id="mcpServerNameInput" class="drawer-input" type="text" placeholder="例如：Weather Service">
+          <input id="mcpServerNameInput" class="drawer-input" type="text" placeholder="例如：Weather Service" data-i18n-attr="placeholder" data-i18n="page.chat.main.mcp_dialog.name_placeholder">
         </div>
         <div class="mcp-template-actions">
-          <button id="mcpUseStreamableTemplateBtn" class="ghost-button" type="button">Streamable HTTP 模板</button>
-          <button id="mcpUseSseTemplateBtn" class="ghost-button" type="button">SSE 模板</button>
+          <button id="mcpUseStreamableTemplateBtn" class="ghost-button" type="button" data-i18n="page.chat.main.mcp_dialog.streamable_template">Streamable HTTP 模板</button>
+          <button id="mcpUseSseTemplateBtn" class="ghost-button" type="button" data-i18n="page.chat.main.mcp_dialog.sse_template">SSE 模板</button>
         </div>
-        <textarea id="mcpJsonInput" class="drawer-textarea mcp-json-input" spellcheck="false" aria-label="MCP JSON 配置"></textarea>
+        <textarea id="mcpJsonInput" class="drawer-textarea mcp-json-input" spellcheck="false" aria-label="MCP JSON 配置" data-i18n-attr="aria-label" data-i18n="page.chat.main.mcp_dialog.json_aria"></textarea>
       </div>
       <div class="mcp-dialog-footer">
-        <button id="mcpDialogCancelBtn" class="ghost-button" type="button">取消</button>
-        <button id="mcpDialogSaveBtn" class="primary-button" type="button">保存并连接</button>
+        <button id="mcpDialogCancelBtn" class="ghost-button" type="button" data-i18n="page.chat.main.mcp_dialog.cancel">取消</button>
+        <button id="mcpDialogSaveBtn" class="primary-button" type="button" data-i18n="page.chat.main.mcp_dialog.save_connect">保存并连接</button>
       </div>
     </div>
   </div>
-  <div class="image-lightbox" id="imageLightbox" role="dialog" aria-modal="true" aria-label="图片预览">
-    <button class="image-lightbox-close" id="imageLightboxClose" type="button" aria-label="关闭">&times;</button>
-    <img class="image-lightbox-img" id="imageLightboxImg" src="" alt="预览">
+  <div class="image-lightbox" id="imageLightbox" role="dialog" aria-modal="true" aria-label="图片预览" data-i18n-attr="aria-label" data-i18n="page.chat.main.lightbox.aria">
+    <button class="image-lightbox-close" id="imageLightboxClose" type="button" aria-label="关闭" data-i18n-attr="aria-label" data-i18n="page.chat.main.lightbox.close">&times;</button>
+    <img class="image-lightbox-img" id="imageLightboxImg" src="" alt="预览" data-i18n-attr="alt" data-i18n="page.chat.main.lightbox.alt">
   </div>
   <script src="/js/marked.umd.js"></script>
   <script src="/js/highlight.min.js"></script>
   <script src="./chat-mcp.js"></script>
   <script src="./audio-recorder.js"></script>
+  <script src="/js/i18n.js"></script>
   <script>
+    window.I18N = window.I18N || { t: function(key, fallback) { return fallback ?? key; } };
 
     const CHAT_ENDPOINT = '/v1/chat/completions';
     const MODELS_ENDPOINT = '/v1/models';
@@ -465,7 +470,7 @@
       }
       const supported = isAudioSupported();
       els.micRecorderBtn.disabled = !supported;
-      els.micRecorderBtn.title = supported ? '录音' : '当前模型不支持音频';
+      els.micRecorderBtn.title = supported ? window.I18N.t('page.chat.main.composer.record', '录音') : window.I18N.t('page.chat.main.status.audio_unsupported', '当前模型不支持音频');
     }
 
     const els = {
@@ -636,7 +641,7 @@
           return;
         }
         mathJaxLoading = false;
-        showToast('info', '数学公式渲染库加载失败，将保留原始公式文本');
+        showToast('info', window.I18N.t('page.chat.main.toast.math_failed', '数学公式渲染库加载失败，将保留原始公式文本'));
       };
       document.head.appendChild(script);
     }
@@ -978,8 +983,8 @@
            const btn = document.createElement('button');
            btn.type = 'button';
            btn.className = 'code-copy-btn';
-           btn.setAttribute('aria-label', '复制代码');
-           btn.title = '复制代码';
+            btn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.copy_code', '复制代码'));
+            btn.title = window.I18N.t('page.chat.main.action.copy_code', '复制代码');
            btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
             btn.addEventListener('click', () => {
               const code = pre.querySelector('code');
@@ -1007,7 +1012,7 @@
                     btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15V6a2 2 0 0 1 2-2h9"></path></svg>';
                   }, 1500);
                 } catch (e) {
-                  showToast('error', '复制失败，请手动复制');
+                  showToast('error', window.I18N.t('page.chat.main.toast.copy_failed', '复制失败，请手动复制'));
                 }
               })();
             });
@@ -1019,37 +1024,68 @@
        }
      }
 
-    // ── Streaming Text Render（增量追加 TextNode，避免每 token innerHTML 全量替换）──
-    const streamingTextCache = new WeakMap();
+    // ── Streaming Markdown Render（混合追加：先渲染 markdown，新 token 以 TextNode 追加，定期重渲染）──
+    const STREAMING_RENDER_CHAR_THRESHOLD = 50;
+    const STREAMING_RENDER_MS_THRESHOLD = 500;
+    const streamingRenderCache = new WeakMap();
 
-    function appendStreamingText(target, fullText) {
-      if (!target) return;
-      const existingTextNode = streamingTextCache.get(target);
-      if (!existingTextNode) {
-        target.innerHTML = '';
-        target.style.whiteSpace = 'pre-wrap';
-        target.style.wordBreak = 'break-word';
-        const textNode = document.createTextNode(fullText);
-        target.appendChild(textNode);
-        streamingTextCache.set(target, textNode);
-        return;
-      }
-      const currentLen = existingTextNode.textContent.length;
-      if (fullText.length > currentLen) {
-        existingTextNode.appendData(fullText.slice(currentLen));
-      }
+    function getStreamingState(target) {
+      return streamingRenderCache.get(target) || null;
     }
 
     function clearStreamingCache(target) {
-      if (target) {
-        streamingTextCache.delete(target);
-        target.style.removeProperty('white-space');
-        target.style.removeProperty('word-break');
+      if (!target) return;
+      streamingRenderCache.delete(target);
+      target.style.removeProperty('white-space');
+      target.style.removeProperty('word-break');
+    }
+
+    function renderStreamingMarkdown(target, fullText) {
+      if (!target) return;
+      const full = String(fullText || '');
+      let state = getStreamingState(target);
+
+      if (!state) {
+        target.innerHTML = renderMarkdown(full);
+        const textNode = document.createTextNode('');
+        target.appendChild(textNode);
+        streamingRenderCache.set(target, { totalLen: full.length, renderedLen: full.length, textNode, lastRenderMs: Date.now() });
+        return;
       }
+
+      const delta = full.slice(state.totalLen);
+      if (!delta) return;
+
+      state.textNode.appendData(delta);
+      state.totalLen = full.length;
+
+      const now = Date.now();
+      const pendingLen = full.length - state.renderedLen;
+      const shouldRerender = pendingLen >= STREAMING_RENDER_CHAR_THRESHOLD
+        || (now - state.lastRenderMs) >= STREAMING_RENDER_MS_THRESHOLD
+        || delta.includes('```');
+
+      if (!shouldRerender) return;
+
+      target.innerHTML = renderMarkdown(full);
+      state.textNode.textContent = '';
+      target.appendChild(state.textNode);
+      state.renderedLen = full.length;
+      state.lastRenderMs = now;
+    }
+
+    function finalizeStreaming(target, fullText, role) {
+      if (!target) return;
+      clearStreamingCache(target);
+      renderRichText(target, String(fullText || ''), { isStreaming: false, role: role || 'assistant' });
+    }
+
+    function appendStreamingText(target, fullText) {
+      renderStreamingMarkdown(target, fullText);
     }
 
     function nowTime() {
-      return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      return new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
 
     function makeId() {
@@ -1069,7 +1105,7 @@
     }
 
     function normalizeConversationTitle(title) {
-      return title === 'New chat' ? '新对话' : title;
+      return title === 'New chat' ? window.I18N.t('page.chat.main.status.new_conversation_short', '新对话') : title;
     }
 
     function normalizeImages(images) {
@@ -1078,7 +1114,7 @@
             .filter(item => item && typeof item.dataUrl === 'string' && item.dataUrl.startsWith('data:image/'))
             .map((item, index) => ({
               id: typeof item.id === 'string' && item.id ? item.id : 'saved-image-' + index,
-              name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : '图片',
+              name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : window.I18N.t('page.chat.main.message.image', '图片'),
               type: typeof item.type === 'string' && item.type ? item.type : 'image/*',
               size: Number.isFinite(Number(item.size)) ? Number(item.size) : 0,
               dataUrl: item.dataUrl
@@ -1092,7 +1128,7 @@
             .filter(item => item && typeof item.text === 'string')
             .map((item, index) => ({
               id: typeof item.id === 'string' && item.id ? item.id : 'saved-file-' + index,
-              name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : '文件',
+              name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : window.I18N.t('page.chat.main.message.file', '文件'),
               type: typeof item.type === 'string' && item.type ? item.type : 'text/plain',
               size: Number.isFinite(Number(item.size)) ? Number(item.size) : 0,
               text: String(item.text || '').replace(/\r\n/g, '\n')
@@ -1106,7 +1142,7 @@
             .filter(item => item && typeof item.dataUrl === 'string' && item.dataUrl.startsWith('data:audio/'))
             .map((item, index) => ({
               id: typeof item.id === 'string' && item.id ? item.id : 'saved-audio-' + index,
-              name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : '音频',
+              name: typeof item.name === 'string' && item.name.trim() ? item.name.trim() : window.I18N.t('page.chat.main.message.audio', '音频'),
               type: typeof item.type === 'string' && item.type ? item.type : 'audio/wav',
               size: Number.isFinite(Number(item.size)) ? Number(item.size) : 0,
               dataUrl: item.dataUrl
@@ -1119,7 +1155,7 @@
       if (normalized) {
         return normalized.slice(0, 40);
       }
-      return String(fallbackName || '默认助手');
+      return String(fallbackName || window.I18N.t('page.chat.main.message.default_assistant', '默认助手'));
     }
 
     function normalizeMcpAssistantUrls(assistant, fallback = {}) {
@@ -1179,7 +1215,7 @@
     function normalizeAssistant(assistant, fallback = {}) {
       return {
         id: typeof assistant?.id === 'string' && assistant.id.trim() ? assistant.id.trim() : makeId(),
-        name: normalizeAssistantName(assistant?.name, fallback?.name || '默认助手'),
+        name: normalizeAssistantName(assistant?.name, fallback?.name || window.I18N.t('page.chat.main.message.default_assistant', '默认助手')),
         model: typeof assistant?.model === 'string' ? assistant.model : typeof fallback?.model === 'string' ? fallback.model : '',
         temperature: typeof assistant?.temperature === 'string' ? assistant.temperature : typeof fallback?.temperature === 'string' ? fallback.temperature : '',
         maxTokens: typeof assistant?.maxTokens === 'string' ? assistant.maxTokens : typeof fallback?.maxTokens === 'string' ? fallback.maxTokens : '',
@@ -1200,7 +1236,7 @@
 
     function buildLegacyAssistant(saved = {}) {
       return normalizeAssistant({
-        name: '默认助手',
+        name: window.I18N.t('page.chat.main.message.default_assistant', '默认助手'),
         model: typeof saved?.model === 'string' ? saved.model : '',
         temperature: typeof saved?.temperature === 'string' ? saved.temperature : '',
         maxTokens: typeof saved?.maxTokens === 'string' ? saved.maxTokens : '',
@@ -1220,7 +1256,7 @@
     function createAssistantFromSource(source = {}, fallbackName) {
       return normalizeAssistant({
         ...source,
-        name: normalizeAssistantName(source?.name, fallbackName || '新助手')
+        name: normalizeAssistantName(source?.name, fallbackName || window.I18N.t('page.chat.main.message.new_assistant', '新助手'))
       });
     }
 
@@ -1248,7 +1284,7 @@
     }
 
     function formatMessageCount(count) {
-      return String(Number(count || 0)) + ' 条消息';
+      return String(Number(count || 0)) + window.I18N.t('page.chat.main.misc.message_count', ' 条消息');
     }
 
     function createMessageImageCard(image) {
@@ -1260,7 +1296,7 @@
       const preview = document.createElement('img');
       preview.className = 'message-image';
       preview.src = image.dataUrl;
-      preview.alt = image.name || '图片';
+      preview.alt = image.name || window.I18N.t('page.chat.main.message.image', '图片');
       preview.width = 160;
       preview.height = 160;
       preview.loading = 'lazy';
@@ -1268,7 +1304,7 @@
 
       const caption = document.createElement('span');
       caption.className = 'message-image-caption';
-      caption.textContent = image.name || '图片';
+      caption.textContent = image.name || window.I18N.t('page.chat.main.message.image', '图片');
 
       card.appendChild(preview);
       card.appendChild(caption);
@@ -1278,12 +1314,12 @@
     function formatFileSize(size) {
       const bytes = Math.max(0, Number(size || 0));
       if (bytes < 1024) {
-        return bytes + ' B';
+        return bytes + window.I18N.t('page.chat.main.misc.bytes', ' B');
       }
       if (bytes < 1024 * 1024) {
-        return (bytes / 1024).toFixed(1).replace(/\.0$/, '') + ' KB';
+        return (bytes / 1024).toFixed(1).replace(/\.0$/, '') + window.I18N.t('page.chat.main.misc.kilobytes', ' KB');
       }
-      return (bytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, '') + ' MB';
+      return (bytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, '') + window.I18N.t('page.chat.main.misc.megabytes', ' MB');
     }
 
     function createMessageTextFileCard(file) {
@@ -1292,7 +1328,7 @@
 
       const title = document.createElement('div');
       title.className = 'message-file-title';
-      title.textContent = file.name || '文件';
+      title.textContent = file.name || window.I18N.t('page.chat.main.message.file', '文件');
 
       const meta = document.createElement('div');
       meta.className = 'message-file-meta';
@@ -1309,7 +1345,7 @@
 
       const title = document.createElement('div');
       title.className = 'message-file-title';
-      title.textContent = audio.name || '音频';
+      title.textContent = audio.name || window.I18N.t('page.chat.main.message.audio', '音频');
 
       const meta = document.createElement('div');
       meta.className = 'message-file-meta';
@@ -1371,14 +1407,14 @@
       }
       if (state.isSending) {
         els.sendBtn.classList.add('is-stop');
-        els.sendBtn.setAttribute('aria-label', '停止生成');
-        els.sendBtn.setAttribute('title', '停止生成');
+        els.sendBtn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.stop', '停止生成'));
+        els.sendBtn.setAttribute('title', window.I18N.t('page.chat.main.action.stop', '停止生成'));
         els.sendBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5" ry="1.5"></rect></svg>';
         return;
       }
       els.sendBtn.classList.remove('is-stop');
-      els.sendBtn.setAttribute('aria-label', '发送');
-      els.sendBtn.setAttribute('title', '发送');
+      els.sendBtn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.send', '发送'));
+      els.sendBtn.setAttribute('title', window.I18N.t('page.chat.main.action.send', '发送'));
       els.sendBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
     }
 
@@ -1386,7 +1422,7 @@
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('图片读取失败'));
+        reader.onerror = () => reject(new Error(window.I18N.t('page.chat.main.misc.recording_error', '未知错误')));
         reader.readAsDataURL(file);
       });
     }
@@ -1395,7 +1431,7 @@
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('文件读取失败'));
+        reader.onerror = () => reject(new Error(window.I18N.t('page.chat.main.misc.recording_error', '未知错误')));
         reader.readAsText(file, 'UTF-8');
       });
     }
@@ -1441,7 +1477,7 @@
         const preview = document.createElement('img');
         preview.className = 'draft-image-thumb';
         preview.src = image.dataUrl;
-        preview.alt = image.name || '图片';
+      preview.alt = image.name || window.I18N.t('page.chat.main.message.image', '图片');
         preview.width = 80;
         preview.height = 80;
         preview.loading = 'lazy';
@@ -1451,13 +1487,13 @@
         removeBtn.type = 'button';
         removeBtn.className = 'draft-image-remove';
         removeBtn.dataset.removeDraftImage = image.id;
-        removeBtn.setAttribute('aria-label', '移除图片');
-        removeBtn.title = '移除图片';
+        removeBtn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.remove_image', '移除图片'));
+        removeBtn.title = window.I18N.t('page.chat.main.action.remove_image', '移除图片');
         removeBtn.textContent = '×';
 
         const name = document.createElement('div');
         name.className = 'draft-image-name';
-        name.textContent = image.name || '图片';
+        name.textContent = image.name || window.I18N.t('page.chat.main.message.image', '图片');
 
         card.appendChild(preview);
         card.appendChild(removeBtn);
@@ -1476,13 +1512,13 @@
         removeBtn.type = 'button';
         removeBtn.className = 'draft-image-remove';
         removeBtn.dataset.removeDraftFile = file.id;
-        removeBtn.setAttribute('aria-label', '移除文件');
-        removeBtn.title = '移除文件';
+        removeBtn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.remove_file', '移除文件'));
+        removeBtn.title = window.I18N.t('page.chat.main.action.remove_file', '移除文件');
         removeBtn.textContent = '×';
 
         const name = document.createElement('div');
         name.className = 'draft-image-name';
-        name.textContent = file.name || '文件';
+        name.textContent = file.name || window.I18N.t('page.chat.main.message.file', '文件');
 
         const meta = document.createElement('div');
         meta.className = 'draft-file-meta';
@@ -1506,13 +1542,13 @@
         removeBtn.type = 'button';
         removeBtn.className = 'draft-image-remove';
         removeBtn.dataset.removeDraftAudio = audio.id;
-        removeBtn.setAttribute('aria-label', '移除音频');
-        removeBtn.title = '移除音频';
+        removeBtn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.remove_audio', '移除音频'));
+        removeBtn.title = window.I18N.t('page.chat.main.action.remove_audio', '移除音频');
         removeBtn.textContent = '×';
 
         const name = document.createElement('div');
         name.className = 'draft-image-name';
-        name.textContent = audio.name || '音频';
+        name.textContent = audio.name || window.I18N.t('page.chat.main.message.audio', '音频');
 
         const meta = document.createElement('div');
         meta.className = 'draft-file-meta';
@@ -1555,14 +1591,14 @@
             const dataUrl = await readFileAsDataUrl(file);
             state.draftImages.push({
               id: makeImageId(),
-              name: file.name || '图片',
+              name: file.name || window.I18N.t('page.chat.main.message.image', '图片'),
               type: file.type || 'image/*',
               size: Number(file.size || 0),
               dataUrl
             });
             imageAdded += 1;
           } catch (error) {
-            showToast('error', error.message || '图片读取失败');
+            showToast('error', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误'));
           }
           continue;
         }
@@ -1575,14 +1611,14 @@
             const dataUrl = await readFileAsDataUrl(file);
             state.draftAudioFiles.push({
               id: makeAudioFileId(),
-              name: file.name || '音频',
+              name: file.name || window.I18N.t('page.chat.main.message.audio', '音频'),
               type: file.type || 'audio/*',
               size: Number(file.size || 0),
               dataUrl
             });
             audioAdded += 1;
           } catch (error) {
-            showToast('error', error.message || '音频读取失败');
+            showToast('error', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误'));
           }
           continue;
         }
@@ -1598,14 +1634,14 @@
           const text = await readFileAsText(file);
           state.draftTextFiles.push({
             id: makeTextFileId(),
-            name: file.name || '文件',
+              name: file.name || window.I18N.t('page.chat.main.message.file', '文件'),
             type: file.type || 'text/plain',
             size: Number(file.size || 0),
             text: String(text || '').replace(/\r\n/g, '\n')
           });
           textAdded += 1;
         } catch (error) {
-          showToast('error', error.message || '文件读取失败');
+          showToast('error', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误'));
         }
       }
 
@@ -1614,28 +1650,28 @@
         els.imageInput.value = '';
       }
       if (imageAdded) {
-        showToast('success', '已添加 ' + imageAdded + ' 张图片');
+        showToast('success', window.I18N.t('page.chat.main.file.images_added', '已添加 {n} 张图片').replace('{n}', imageAdded));
       }
       if (textAdded) {
-        showToast('success', '已添加 ' + textAdded + ' 个文本文件');
+        showToast('success', window.I18N.t('page.chat.main.file.text_files_added', '已添加 {n} 个文本文件').replace('{n}', textAdded));
       }
       if (audioAdded) {
-        showToast('success', '已添加 ' + audioAdded + ' 个音频文件');
+        showToast('success', window.I18N.t('page.chat.main.file.audio_files_added', '已添加 {n} 个音频文件').replace('{n}', audioAdded));
       }
       if (invalidCount) {
-        showToast('info', '已忽略 ' + invalidCount + ' 个不支持的文件');
+        showToast('info', window.I18N.t('page.chat.main.file.invalid_files_ignored', '已忽略 {n} 个不支持的文件').replace('{n}', invalidCount));
       }
       if (oversizedImageCount) {
-        showToast('error', oversizedImageCount + ' 张图片超过 10 MB，未添加');
+        showToast('error', window.I18N.t('page.chat.main.file.images_oversized', '{n} 张图片超过 10 MB，未添加').replace('{n}', oversizedImageCount));
       }
       if (oversizedTextCount) {
-        showToast('error', oversizedTextCount + ' 个文本文件超过 512 KB，未添加');
+        showToast('error', window.I18N.t('page.chat.main.file.text_oversized', '{n} 个文本文件超过 512 KB，未添加').replace('{n}', oversizedTextCount));
       }
       if (oversizedAudioCount) {
-        showToast('error', oversizedAudioCount + ' 个音频文件超过 25 MB，未添加');
+        showToast('error', window.I18N.t('page.chat.main.file.audio_oversized', '{n} 个音频文件超过 25 MB，未添加').replace('{n}', oversizedAudioCount));
       }
       if (imageLimitReached) {
-        showToast('info', '最多只能添加 ' + MAX_IMAGE_COUNT + ' 张图片');
+        showToast('info', window.I18N.t('page.chat.main.file.image_limit', '最多只能添加 {n} 张图片').replace('{n}', MAX_IMAGE_COUNT));
       }
       if (imageAdded || textAdded || audioAdded) {
         els.promptInput.focus();
@@ -1672,7 +1708,7 @@
       for (const file of files) {
         content.push({
           type: 'text',
-          text: '[文件] ' + file.name + '\n' + file.text
+          text: '[' + window.I18N.t('page.chat.main.message.file', '文件') + '] ' + file.name + '\n' + file.text
         });
       }
       for (const image of images) {
@@ -1742,7 +1778,7 @@
       const messagesLoaded = Array.isArray(summary.messages);
       return {
         id: typeof summary.id === 'string' ? summary.id : makeId(),
-        title: typeof summary.title === 'string' ? normalizeConversationTitle(summary.title) : '新对话',
+        title: typeof summary.title === 'string' ? normalizeConversationTitle(summary.title) : window.I18N.t('page.chat.main.status.new_conversation_short', '新对话'),
         createdAt: Number(summary.createdAt || Date.now()),
         updatedAt: Number(summary.updatedAt || Date.now()),
         assistantId: typeof summary.assistantId === 'string' && getAssistantById(summary.assistantId) ? summary.assistantId : fallbackAssistantId,
@@ -1758,7 +1794,7 @@
       const now = Date.now();
       return normalizeConversationSummary({
         id: typeof extra.id === 'string' && extra.id.trim() ? extra.id.trim() : makeId(),
-        title: typeof extra.title === 'string' ? extra.title : '新对话',
+        title: typeof extra.title === 'string' ? extra.title : window.I18N.t('page.chat.main.status.new_conversation_short', '新对话'),
         createdAt: Number(extra.createdAt || now),
         updatedAt: Number(extra.updatedAt || now),
         assistantId: typeof extra.assistantId === 'string' && extra.assistantId.trim()
@@ -1787,7 +1823,7 @@
     function buildConversationSummaryPayload(conversation) {
       return {
         id: conversation?.id || makeId(),
-        title: typeof conversation?.title === 'string' ? normalizeConversationTitle(conversation.title) : '新对话',
+        title: typeof conversation?.title === 'string' ? normalizeConversationTitle(conversation.title) : window.I18N.t('page.chat.main.status.new_conversation_short', '新对话'),
         createdAt: Number(conversation?.createdAt || Date.now()),
         updatedAt: Number(conversation?.updatedAt || Date.now()),
         assistantId: typeof conversation?.assistantId === 'string' ? conversation.assistantId : '',
@@ -1820,30 +1856,30 @@
 
     function getNextAssistantName() {
       let index = state.assistants.length + 1;
-      let candidate = '助手 ' + index;
+      let candidate = window.I18N.t('page.chat.main.message.assistant_n', '助手 {n}').replace('{n}', index);
       const usedNames = new Set(state.assistants.map(item => item.name));
       while (usedNames.has(candidate)) {
         index += 1;
-        candidate = '助手 ' + index;
+        candidate = window.I18N.t('page.chat.main.message.assistant_n', '助手 {n}').replace('{n}', index);
       }
       return candidate;
     }
 
     function getConversationPrivacyLabel(conversation) {
       const index = state.conversations.findIndex(item => item?.id === conversation?.id);
-      return '会话 ' + (index >= 0 ? index + 1 : '•');
+      return window.I18N.t('page.chat.main.misc.conversation_n', '会话 {n}').replace('{n}', index >= 0 ? index + 1 : '•');
     }
 
     function getAssistantPrivacyLabel(assistant) {
       const index = state.assistants.findIndex(item => item?.id === assistant?.id);
-      return '助手 ' + (index >= 0 ? index + 1 : '•');
+      return window.I18N.t('page.chat.main.message.assistant_n', '助手 {n}').replace('{n}', index >= 0 ? index + 1 : '•');
     }
 
     function getConversationDisplayTitle(conversation) {
       if (!conversation) {
-        return '新对话';
+        return window.I18N.t('page.chat.main.status.new_conversation_short', '新对话');
       }
-      return state.privacyMode ? getConversationPrivacyLabel(conversation) : (conversation.title || '新对话');
+      return state.privacyMode ? getConversationPrivacyLabel(conversation) : (conversation.title || window.I18N.t('page.chat.main.status.new_conversation_short', '新对话'));
     }
 
     function getAssistantDisplayLabel(assistant) {
@@ -1860,8 +1896,8 @@
       const enabled = !!state.privacyMode;
       els.privacyModeBtn.classList.toggle('active', enabled);
       els.privacyModeBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-      els.privacyModeBtn.setAttribute('aria-label', enabled ? '关闭隐私模式' : '开启隐私模式');
-      els.privacyModeBtn.setAttribute('title', enabled ? '隐私模式已开启' : '隐私模式');
+      els.privacyModeBtn.setAttribute('aria-label', enabled ? window.I18N.t('page.chat.main.topbar.privacy_close', '关闭隐私模式') : window.I18N.t('page.chat.main.topbar.privacy_on', '开启隐私模式'));
+      els.privacyModeBtn.setAttribute('title', enabled ? window.I18N.t('page.chat.main.topbar.privacy_active', '隐私模式已开启') : window.I18N.t('page.chat.main.topbar.privacy', '隐私模式'));
     }
 
     async function togglePrivacyMode() {
@@ -1882,7 +1918,7 @@
       if (value && !Array.from(els.modelSelect.options).some(option => option.value === value)) {
         const option = document.createElement('option');
         option.value = value;
-        option.textContent = value + ' (当前模型)';
+        option.textContent = value + window.I18N.t('page.chat.main.misc.current_model', ' (当前模型)');
         option.dataset.tempModel = 'true';
         els.modelSelect.insertBefore(option, els.modelSelect.firstChild);
       }
@@ -1969,13 +2005,13 @@
       }
       const firstUser = conversation.messages.find(item => item.role === 'user' && hasMessageBody(item));
       if (!firstUser) {
-        conversation.title = '新对话';
+        conversation.title = window.I18N.t('page.chat.main.status.new_conversation_short', '新对话');
         return;
       }
       const text = String(firstUser.content || '').trim();
       conversation.title = text
         ? text.replace(/\s+/g, ' ').slice(0, 28)
-        : '附件对话';
+        : window.I18N.t('page.chat.main.misc.attachment_conversation', '附件对话');
     }
 
     function getAssistantDisplayName(message, fallbackModel) {
@@ -1985,7 +2021,7 @@
           ? fallbackModel.trim()
           : typeof state.model === 'string' && state.model.trim()
             ? state.model.trim()
-            : '模型';
+            : window.I18N.t('page.chat.main.message.model', '模型');
       return modelName;
     }
 
@@ -2008,7 +2044,9 @@
         'predicted_n',
         'predicted_ms',
         'predicted_per_token_ms',
-        'predicted_per_second'
+        'predicted_per_second',
+        'draft_n',
+        'draft_n_accepted'
       ];
       for (const key of keys) {
         const normalized = normalizeTimingNumber(value[key]);
@@ -2050,19 +2088,24 @@
         ? (normalized.cache_n ?? 0) + (normalized.prompt_n ?? 0) + (normalized.predicted_n ?? 0)
         : null;
       if (normalized.prompt_ms !== undefined) {
-        parts.push('首字延迟 ' + formatTimingValue(normalized.prompt_ms, 3) + ' ms');
+        parts.push(window.I18N.t('page.chat.main.timing.first_token', '首字延迟 {n} ms').replace('{n}', formatTimingValue(normalized.prompt_ms, 3)));
       }
       if (totalTokens !== null) {
-        parts.push('累计 ' + formatTimingValue(totalTokens, 0) + ' token');
+        parts.push(window.I18N.t('page.chat.main.timing.total_tokens', '累计 {n} token').replace('{n}', formatTimingValue(totalTokens, 0)));
       }
       if (normalized.predicted_per_second !== undefined) {
-        parts.push('速度 ' + formatTimingValue(normalized.predicted_per_second, 2) + ' token/s');
+        parts.push(window.I18N.t('page.chat.main.timing.speed', '速度 {n} token/s').replace('{n}', formatTimingValue(normalized.predicted_per_second, 2)));
       }
       if (normalized.predicted_n !== undefined) {
-        parts.push('生成 ' + formatTimingValue(normalized.predicted_n, 0) + ' token');
+        parts.push(window.I18N.t('page.chat.main.timing.generated', '生成 {n} token').replace('{n}', formatTimingValue(normalized.predicted_n, 0)));
       }
       if (normalized.cache_n !== undefined && normalized.cache_n > 0) {
-        parts.push('缓存 ' + formatTimingValue(normalized.cache_n, 0) + ' token');
+        parts.push(window.I18N.t('page.chat.main.timing.cached', '缓存 {n} token').replace('{n}', formatTimingValue(normalized.cache_n, 0)));
+      }
+      if (normalized.draft_n !== undefined && normalized.draft_n > 0) {
+        const accepted = normalized.draft_n_accepted ?? 0;
+        const pct = normalized.draft_n > 0 ? (accepted / normalized.draft_n * 100) : 0;
+        parts.push(window.I18N.t('page.chat.main.timing.speculative', '投机解码 {a}/{b} ({p}%)').replace('{a}', formatTimingValue(accepted, 0)).replace('{b}', formatTimingValue(normalized.draft_n, 0)).replace('{p}', formatTimingValue(pct, 1)));
       }
       return parts.join('｜');
     }
@@ -2074,7 +2117,7 @@
       }
       const lines = [];
       if (normalized.cache_n !== undefined && normalized.cache_n > 0) {
-        lines.push('缓存命中 ' + formatTimingValue(normalized.cache_n, 0) + ' token');
+        lines.push(window.I18N.t('page.chat.main.timing.cache_hit', '缓存命中 {n} token').replace('{n}', formatTimingValue(normalized.cache_n, 0)));
       }
       if (
         normalized.prompt_n !== undefined ||
@@ -2084,19 +2127,19 @@
       ) {
         const promptParts = [];
         if (normalized.prompt_n !== undefined) {
-          promptParts.push('提示词 ' + formatTimingValue(normalized.prompt_n, 0) + ' token');
+          promptParts.push(window.I18N.t('page.chat.main.timing.detail_prompt_tokens', '提示词 {n} token').replace('{n}', formatTimingValue(normalized.prompt_n, 0)));
         }
         if (normalized.prompt_ms !== undefined) {
-          promptParts.push('耗时 ' + formatTimingValue(normalized.prompt_ms, 3) + ' ms');
+          promptParts.push(window.I18N.t('page.chat.main.timing.detail_duration', '耗时 {n} ms').replace('{n}', formatTimingValue(normalized.prompt_ms, 3)));
         }
         if (normalized.prompt_per_token_ms !== undefined) {
-          promptParts.push('单 token ' + formatTimingValue(normalized.prompt_per_token_ms, 3) + ' ms');
+          promptParts.push(window.I18N.t('page.chat.main.timing.detail_per_token', '单 token {n} ms').replace('{n}', formatTimingValue(normalized.prompt_per_token_ms, 3)));
         }
         if (normalized.prompt_per_second !== undefined) {
-          promptParts.push('速度 ' + formatTimingValue(normalized.prompt_per_second, 2) + ' token/s');
+          promptParts.push(window.I18N.t('page.chat.main.timing.detail_speed', '速度 {n} token/s').replace('{n}', formatTimingValue(normalized.prompt_per_second, 2)));
         }
         if (promptParts.length) {
-          lines.push('提示阶段：' + promptParts.join('｜'));
+          lines.push(window.I18N.t('page.chat.main.timing.detail_prompt', '提示阶段：') + promptParts.join('｜'));
         }
       }
       if (
@@ -2107,20 +2150,29 @@
       ) {
         const predictedParts = [];
         if (normalized.predicted_n !== undefined) {
-          predictedParts.push('生成 ' + formatTimingValue(normalized.predicted_n, 0) + ' token');
+          predictedParts.push(window.I18N.t('page.chat.main.timing.generated', '生成 {n} token').replace('{n}', formatTimingValue(normalized.predicted_n, 0)));
         }
         if (normalized.predicted_ms !== undefined) {
-          predictedParts.push('耗时 ' + formatTimingValue(normalized.predicted_ms, 3) + ' ms');
+          predictedParts.push(window.I18N.t('page.chat.main.timing.detail_duration', '耗时 {n} ms').replace('{n}', formatTimingValue(normalized.predicted_ms, 3)));
         }
         if (normalized.predicted_per_token_ms !== undefined) {
-          predictedParts.push('单 token ' + formatTimingValue(normalized.predicted_per_token_ms, 3) + ' ms');
+          predictedParts.push(window.I18N.t('page.chat.main.timing.detail_per_token', '单 token {n} ms').replace('{n}', formatTimingValue(normalized.predicted_per_token_ms, 3)));
         }
         if (normalized.predicted_per_second !== undefined) {
-          predictedParts.push('速度 ' + formatTimingValue(normalized.predicted_per_second, 2) + ' token/s');
+          predictedParts.push(window.I18N.t('page.chat.main.timing.detail_speed', '速度 {n} token/s').replace('{n}', formatTimingValue(normalized.predicted_per_second, 2)));
         }
         if (predictedParts.length) {
-          lines.push('生成阶段：' + predictedParts.join('｜'));
+          lines.push(window.I18N.t('page.chat.main.timing.detail_generation', '生成阶段：') + predictedParts.join('｜'));
         }
+      }
+      if (normalized.draft_n !== undefined && normalized.draft_n > 0) {
+        const accepted = normalized.draft_n_accepted ?? 0;
+        const pct = normalized.draft_n > 0 ? (accepted / normalized.draft_n * 100) : 0;
+        const draftParts = [];
+        draftParts.push(window.I18N.t('page.chat.main.timing.detail_draft', '草稿生成 {n} token').replace('{n}', formatTimingValue(normalized.draft_n, 0)));
+        draftParts.push(window.I18N.t('page.chat.main.timing.detail_accepted', '接受 {n} token').replace('{n}', formatTimingValue(accepted, 0)));
+        draftParts.push(window.I18N.t('page.chat.main.timing.detail_accept_rate', '接受率 {p}%').replace('{p}', formatTimingValue(pct, 1)));
+        lines.push(window.I18N.t('page.chat.main.timing.detail_speculative', '投机解码：') + draftParts.join('｜'));
       }
       return lines.join('\n');
     }
@@ -2335,8 +2387,8 @@
       const toggleMeta = document.createElement('div');
       toggleMeta.className = 'tool-call-meta';
       toggleMeta.innerHTML =
-        '<span class="tool-call-list-title">工具调用</span>' +
-        '<span class="tool-call-list-state">' + (message.toolCallsCollapsed ? '点击展开' : '点击收起') + ' ' + message.toolCalls.length + ' 个请求</span>';
+        '<span class="tool-call-list-title">' + window.I18N.t('page.chat.main.message.tool_calls', '工具调用') + '</span>' +
+        '<span class="tool-call-list-state">' + (message.toolCallsCollapsed ? window.I18N.t('page.chat.main.message.expand_requests', '点击展开 {n} 个请求').replace('{n}', message.toolCalls.length) : window.I18N.t('page.chat.main.message.collapse_requests', '点击收起 {n} 个请求').replace('{n}', message.toolCalls.length)) + '</span>';
 
       const toggleCaret = document.createElement('span');
       toggleCaret.className = 'tool-call-caret';
@@ -2358,7 +2410,7 @@
         const itemHead = document.createElement('div');
         itemHead.className = 'tool-call-item-head';
         itemHead.innerHTML =
-          '<strong>' + escapeHtml(toolCall?.function?.name || '未命名工具') + '</strong>' +
+          '<strong>' + escapeHtml(toolCall?.function?.name || window.I18N.t('page.chat.main.message.unnamed_tool', '未命名工具')) + '</strong>' +
           '<span>' + escapeHtml(toolCall?.id || '') + '</span>';
 
         const args = document.createElement('pre');
@@ -2408,8 +2460,8 @@
       const toggleMeta = document.createElement('div');
       toggleMeta.className = 'tool-result-meta';
       toggleMeta.innerHTML =
-        '<span class="tool-result-label">' + escapeHtml(message.toolName || '工具结果') + '</span>' +
-        '<span class="tool-result-state">' + (message.toolResultCollapsed ? '点击展开结果' : '点击收起结果') + '</span>';
+        '<span class="tool-result-label">' + escapeHtml(message.toolName || window.I18N.t('page.chat.main.message.tool_result', '工具结果')) + '</span>' +
+        '<span class="tool-result-state">' + (message.toolResultCollapsed ? window.I18N.t('page.chat.main.message.expand_result', '点击展开结果') : window.I18N.t('page.chat.main.message.collapse_result', '点击收起结果')) + '</span>';
 
       const toggleCaret = document.createElement('span');
       toggleCaret.className = 'tool-result-caret';
@@ -2467,16 +2519,16 @@
           select.appendChild(option);
         }
         select.value = currentAssistant?.id || '';
-        select.title = currentAssistant ? '当前助手：' + getAssistantDisplayLabel(currentAssistant) : '当前没有可用助手';
+        select.title = currentAssistant ? window.I18N.t('page.chat.main.misc.current_assistant', '当前助手：{name}').replace('{name}', getAssistantDisplayLabel(currentAssistant)) : window.I18N.t('page.chat.main.message.no_assistant', '当前没有可用助手');
       }
       els.assistantNameInput.value = currentAssistant ? getAssistantDisplayLabel(currentAssistant) : '';
       els.assistantNameInput.readOnly = !!state.privacyMode;
       els.assistantNameInput.setAttribute('aria-readonly', state.privacyMode ? 'true' : 'false');
-      els.assistantNameInput.placeholder = state.privacyMode ? '隐私模式已隐藏真实助手名' : '例如：代码助手';
+      els.assistantNameInput.placeholder = state.privacyMode ? window.I18N.t('page.chat.main.topbar.privacy_hidden_placeholder', '隐私模式已隐藏真实助手名') : window.I18N.t('page.chat.main.settings.assistant_name_placeholder', '例如：代码助手');
       if (currentAssistant) {
-        els.assistantUsageHint.textContent = '当前助手已被 ' + getAssistantUsageCount(currentAssistant.id) + ' 个会话使用';
+        els.assistantUsageHint.textContent = window.I18N.t('page.chat.main.settings.assistant_usage_hint', '当前助手已被 {n} 个会话使用').replace('{n}', getAssistantUsageCount(currentAssistant.id));
       } else {
-        els.assistantUsageHint.textContent = '当前没有可用助手';
+        els.assistantUsageHint.textContent = window.I18N.t('page.chat.main.message.no_assistant', '当前没有可用助手');
       }
       els.deleteAssistantBtn.disabled = state.assistants.length <= 1;
       syncModelSelectControl();
@@ -2626,7 +2678,7 @@
         currentConversation: currentConversation && isConversationLoaded(currentConversation)
           ? {
               id: currentConversation.id,
-              title: typeof currentConversation.title === 'string' ? currentConversation.title : '新对话',
+              title: typeof currentConversation.title === 'string' ? currentConversation.title : window.I18N.t('page.chat.main.status.new_conversation_short', '新对话'),
               createdAt: Number(currentConversation.createdAt || Date.now()),
               updatedAt: Number(currentConversation.updatedAt || Date.now()),
               assistantId: typeof currentConversation.assistantId === 'string' ? currentConversation.assistantId : '',
@@ -2668,9 +2720,9 @@
     function setStateLoadGuard(loading, statusText) {
       stateLoadInProgress = !!loading;
       if (loading) {
-        updateStatus('', statusText || '正在同步会话数据，请稍候…', '同步中');
+        updateStatus('', statusText || window.I18N.t('page.chat.main.status.syncing', '正在同步会话数据，请稍候…'), window.I18N.t('page.chat.main.status.syncing_short', '同步中'));
       } else if (!stateLoadedFromServer) {
-        updateStatus('error', statusText || '无法连接服务器，已禁止本地操作', '连接失败');
+        updateStatus('error', statusText || window.I18N.t('page.chat.main.status.connection_failed', '无法连接服务器，已禁止本地操作'), window.I18N.t('page.chat.main.status.connection_failed_short', '连接失败'));
       }
       updateInteractionLockState();
     }
@@ -2678,7 +2730,7 @@
     function setConversationLoadGuard(loading, statusText) {
       conversationLoadInProgress = !!loading;
       if (loading) {
-        updateStatus('', statusText || '正在加载会话内容，请稍候…', '加载中');
+        updateStatus('', statusText || window.I18N.t('page.chat.main.status.loading_conversation', '正在加载会话内容，请稍候…'), window.I18N.t('page.chat.main.status.loading_conversation_short', '加载中'));
       }
       updateInteractionLockState();
     }
@@ -2688,15 +2740,15 @@
         return true;
       }
       if (stateLoadInProgress || conversationLoadInProgress) {
-        showToast('info', '正在同步会话数据，请等待完成后再操作');
+        showToast('info', window.I18N.t('page.chat.main.status.syncing', '正在同步会话数据，请等待完成后再操作'));
       } else {
-        showToast('error', '网络错误：无法连接服务器加载会话数据，请先恢复连接');
+        showToast('error', window.I18N.t('page.chat.main.error.network', '网络错误：无法连接服务器加载会话数据，请先恢复连接'));
       }
       return false;
     }
 
     async function ensureServerStateReady(options = {}) {
-      const operationName = String(options?.operationName || '操作');
+      const operationName = String(options?.operationName || window.I18N.t('page.chat.main.misc.operation', '操作'));
       const showNetworkToast = options?.showNetworkToast !== false;
       const showConflictToast = options?.showConflictToast !== false;
       if (!ensureStateReadyForOperation()) {
@@ -2708,13 +2760,13 @@
           timeoutMs: STATE_LOAD_TIMEOUT_MS
         });
         if (!json?.success) {
-          throw new Error(json?.error || '状态校验失败');
+          throw new Error(json?.error || window.I18N.t('page.chat.main.error.revision_check_failed', '状态校验失败'));
         }
         const serverRevision = normalizeRevision(json?.data?.revision);
         if (serverRevision && stateRevision && serverRevision !== stateRevision) {
-          updateStatus('error', '检测到会话已在其他页面更新，正在同步最新状态', '状态冲突');
+          updateStatus('error', window.I18N.t('page.chat.main.status.concurrency_conflict', '检测到会话已在其他页面更新，正在同步最新状态'), window.I18N.t('page.chat.main.status.concurrency_conflict_short', '状态冲突'));
           if (showConflictToast) {
-            showToast('error', '检测到会话状态变化，已先同步服务端数据，请重试' + operationName);
+            showToast('error', window.I18N.t('page.chat.main.error.concurrent_sync', '检测到会话状态变化，已先同步服务端数据，请重试{operation}').replace('{operation}', operationName));
           }
           await loadState();
           renderConversationList();
@@ -2729,9 +2781,9 @@
         }
         return { ok: true, reason: '' };
       } catch (error) {
-        updateStatus('error', operationName + '前状态校验失败：' + (error?.message || '网络错误'), '校验失败');
+        updateStatus('error', window.I18N.t('page.chat.main.status.precheck_failed', '{op}前状态校验失败：{error}').replace('{op}', operationName).replace('{error}', error?.message || window.I18N.t('page.chat.main.error.network', '网络错误：无法连接服务器加载会话数据，请先恢复连接')), window.I18N.t('page.chat.main.status.precheck_failed_short', '校验失败'));
         if (showNetworkToast) {
-          showToast('error', operationName + '前无法确认服务端状态，请检查网络后重试');
+          showToast('error', window.I18N.t('page.chat.main.error.precheck_failed', '{op}前无法确认服务端状态，请检查网络后重试').replace('{op}', operationName));
         }
         return { ok: false, reason: 'network' };
       }
@@ -2746,8 +2798,8 @@
       pendingStatePayload = null;
       clearStateSaveRetryTimer();
       stateSaveInFlight = false;
-      updateStorageHint('检测到远端状态已变化，已停止自动覆盖，正在重新加载');
-      showToast('error', '检测到状态冲突，已阻止覆盖并自动重新加载');
+      updateStorageHint(window.I18N.t('page.chat.main.settings.remote_state_changed', '检测到远端状态已变化，已停止自动覆盖，正在重新加载'));
+      showToast('error', window.I18N.t('page.chat.main.error.conflict', '检测到状态冲突，已阻止覆盖并自动重新加载'));
       await loadState();
       renderConversationList();
       renderMessages();
@@ -2791,14 +2843,14 @@
       if (isConversationLoaded(conversation)) {
         return conversation;
       }
-      setConversationLoadGuard(true, '正在从服务端加载当前会话…');
+      setConversationLoadGuard(true, window.I18N.t('page.chat.main.status.loading_current_conversation', '正在从服务端加载当前会话…'));
       try {
         const json = await fetchJson(EASY_CHAT_CONVERSATION_ENDPOINT + '?id=' + encodeURIComponent(id), {
           headers: getHeaders(),
           timeoutMs: STATE_LOAD_TIMEOUT_MS
         });
         if (!json?.success) {
-          throw new Error(json?.error || '加载会话失败');
+          throw new Error(json?.error || window.I18N.t('page.chat.main.error.load_conversation', '加载会话失败'));
         }
         const loadedConversation = json?.data?.conversation || {};
         setConversationLoadedMessages(conversation, loadedConversation.messages);
@@ -2817,7 +2869,7 @@
         return conversation;
       } catch (error) {
         if (options.showErrorToast !== false) {
-          showToast('error', '加载会话失败：' + (error?.message || '网络错误'));
+          showToast('error', window.I18N.t('page.chat.main.error.load_conversation_failed', '加载会话失败：{error}').replace('{error}', error?.message || window.I18N.t('page.chat.main.error.network', '网络错误：无法连接服务器加载会话数据，请先恢复连接')));
         }
         throw error;
       } finally {
@@ -2845,7 +2897,7 @@
         timeoutMs: STATE_SAVE_TIMEOUT_MS
       });
       if (!json?.success) {
-        throw new Error(json?.error || '保存失败');
+        throw new Error(json?.error || window.I18N.t('page.chat.main.toast.save_failed', '保存失败'));
       }
       stateRevision = normalizeRevision(json?.data?.revision);
       updateStorageHint('');
@@ -2859,7 +2911,7 @@
       }
       if (!stateLoadedFromServer) {
         pendingStatePayload = null;
-        updateStorageHint('服务端状态未加载，已禁止写回以保护历史记录');
+        updateStorageHint(window.I18N.t('page.chat.main.settings.storage_not_loaded', '服务端状态未加载，已禁止写回以保护历史记录'));
         return false;
       }
       if (stateSaveInFlight) {
@@ -2874,7 +2926,7 @@
       let saved = false;
       try {
         const precheck = await ensureServerStateReady({
-          operationName: '保存',
+          operationName: window.I18N.t('page.chat.main.action.save', '保存'),
           showNetworkToast: options.showErrorToast !== false,
           showConflictToast: options.showErrorToast !== false
         });
@@ -2882,7 +2934,7 @@
           if (precheck.reason === 'conflict') {
             pendingStatePayload = null;
             clearStateSaveRetryTimer();
-            updateStorageHint('检测到服务端状态变化，已同步最新状态，本地修改请重新操作后再保存');
+            updateStorageHint(window.I18N.t('page.chat.main.settings.server_state_changed', '检测到服务端状态变化，已同步最新状态，本地修改请重新操作后再保存'));
           } else {
             pendingStatePayload = payload;
             scheduleStateSaveRetry(typeof options.retryDelay === 'number' ? options.retryDelay : 2000);
@@ -2900,16 +2952,16 @@
           return false;
         }
         pendingStatePayload = payload;
-        updateStorageHint('服务端保存失败，当前更改尚未落盘');
+        updateStorageHint(window.I18N.t('page.chat.main.settings.storage_save_failed', '服务端保存失败，当前更改尚未落盘'));
         if (options.showErrorToast !== false) {
-          showToast('error', '保存失败：' + (error.message || '未知错误'));
+          showToast('error', window.I18N.t('page.chat.main.error.save_failed', '保存失败：{error}').replace('{error}', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误')));
         }
         scheduleStateSaveRetry(typeof options.retryDelay === 'number' ? options.retryDelay : 2000);
         return false;
       } finally {
         stateSaveInFlight = false;
-        if (saved && pendingStatePayload) {
-          void flushStateSave({ showErrorToast: false });
+        if (saved) {
+          pendingStatePayload = null;
         }
       }
     }
@@ -2926,7 +2978,7 @@
           stateSaveTimer = 0;
         }
         clearStateSaveRetryTimer();
-        updateStorageHint('服务端状态未加载，已禁止写回以保护历史记录');
+        updateStorageHint(window.I18N.t('page.chat.main.settings.storage_not_loaded', '服务端状态未加载，已禁止写回以保护历史记录'));
         return Promise.resolve(false);
       }
       const payload = clonePersistedPayload(buildSyncPayload());
@@ -2946,8 +2998,8 @@
     }
 
     async function loadState() {
-      updateStorageHint('正在从服务端加载聊天记录…');
-      setStateLoadGuard(true, '正在从服务端同步聊天记录…');
+      updateStorageHint(window.I18N.t('page.chat.main.settings.storage_loading', '正在从服务端加载聊天记录…'));
+      setStateLoadGuard(true, window.I18N.t('page.chat.main.settings.storage_syncing', '正在从服务端同步聊天记录…'));
       let remoteState = {};
       let loadedFromServer = false;
       let loadErrorMessage = '';
@@ -2957,7 +3009,7 @@
           timeoutMs: STATE_LOAD_TIMEOUT_MS
         });
         if (!json?.success) {
-          throw new Error(json?.error || '加载失败');
+          throw new Error(json?.error || window.I18N.t('page.chat.main.error.load_failed', '加载失败'));
         }
         remoteState = json?.data?.state || {};
         stateRevision = normalizeRevision(json?.data?.revision);
@@ -2965,9 +3017,9 @@
       } catch (error) {
         console.error(error);
         stateRevision = '';
-        loadErrorMessage = error?.message || '网络错误';
-        updateStorageHint('网络错误：无法连接服务器加载会话数据，已禁止本地操作');
-        showToast('error', '网络错误：无法连接服务器加载会话数据');
+        loadErrorMessage = error?.message || window.I18N.t('page.chat.main.status.connection_failed_short', '连接失败');
+        updateStorageHint(window.I18N.t('page.chat.main.settings.network_error', '网络错误：无法连接服务器加载会话数据，已禁止本地操作'));
+        showToast('error', window.I18N.t('page.chat.main.error.network_short', '网络错误：无法连接服务器加载会话数据'));
       }
       stateLoadedFromServer = loadedFromServer;
       if (loadedFromServer) {
@@ -2982,12 +3034,12 @@
         } catch (error) {
           console.error(error);
           stateLoadedFromServer = false;
-          loadErrorMessage = error?.message || '加载会话失败';
-          updateStorageHint('网络错误：无法连接服务器加载会话数据，已禁止本地操作');
+          loadErrorMessage = error?.message || window.I18N.t('page.chat.main.error.load_conversation', '加载会话失败');
+        updateStorageHint(window.I18N.t('page.chat.main.settings.network_error', '网络错误：无法连接服务器加载会话数据，已禁止本地操作'));
           setStateLoadGuard(false, loadErrorMessage);
         }
       } else {
-        setStateLoadGuard(false, loadErrorMessage || '网络错误：无法连接服务器加载会话数据');
+        setStateLoadGuard(false, loadErrorMessage || window.I18N.t('page.chat.main.settings.network_error', '网络错误：无法连接服务器加载会话数据，已禁止本地操作'));
       }
       return loadedFromServer;
     }
@@ -3014,7 +3066,7 @@
       if (!list.length) {
         const li = document.createElement('li');
         li.className = 'conversation-meta';
-        li.textContent = '没有匹配的会话';
+        li.textContent = window.I18N.t('page.chat.main.misc.search_empty', '没有匹配的会话');
         els.conversationList.appendChild(li);
         return;
       }
@@ -3027,9 +3079,9 @@
             '<div class="conversation-title">' + escapeHtml(getConversationDisplayTitle(item)) + '</div>' +
             '<div class="conversation-meta"><span>' + formatMessageCount(getConversationMessageCount(item)) + '</span><span>' + escapeHtml(formatConversationTime(item.updatedAt)) + '</span></div>' +
           '</button>' +
-          '<button type="button" class="conversation-more-btn' + (state.conversationMenuId === item.id ? ' active' : '') + '" data-conversation-menu-toggle="' + escapeHtml(item.id) + '" aria-label="会话操作" aria-haspopup="menu" aria-expanded="' + (state.conversationMenuId === item.id ? 'true' : 'false') + '" title="会话操作">⋯</button>' +
+          '<button type="button" class="conversation-more-btn' + (state.conversationMenuId === item.id ? ' active' : '') + '" data-conversation-menu-toggle="' + escapeHtml(item.id) + '" aria-label="' + window.I18N.t('page.chat.main.sidebar.conversation_actions', '会话操作') + '" aria-haspopup="menu" aria-expanded="' + (state.conversationMenuId === item.id ? 'true' : 'false') + '" title="' + window.I18N.t('page.chat.main.sidebar.conversation_actions', '会话操作') + '">⋯</button>' +
           '<div class="conversation-menu' + (state.conversationMenuId === item.id ? ' open' : '') + '" data-conversation-menu="' + escapeHtml(item.id) + '" role="menu" aria-hidden="' + (state.conversationMenuId === item.id ? 'false' : 'true') + '">' +
-            '<button type="button" class="conversation-menu-item danger" data-delete-conversation="' + escapeHtml(item.id) + '" role="menuitem">删除</button>' +
+            '<button type="button" class="conversation-menu-item danger" data-delete-conversation="' + escapeHtml(item.id) + '" role="menuitem">' + window.I18N.t('page.chat.main.action.delete', '删除') + '</button>' +
           '</div>';
         els.conversationList.appendChild(li);
       }
@@ -3046,11 +3098,11 @@
         ? getAssistantDisplayName(message)
         : '';
       const messageTitle = message.role === 'user'
-        ? '用户'
+        ?         window.I18N.t('page.chat.main.message.user_role', '用户')
         : message.role === 'tool'
-          ? (message.toolName ? '工具 · ' + message.toolName : '工具')
+          ? (message.toolName ? window.I18N.t('page.chat.main.message.tool_role', '工具 · {name}').replace('{name}', message.toolName) : window.I18N.t('page.chat.main.message.tool_role_simple', '工具'))
           : assistantDisplayName;
-      const avatarLabel = message.role === 'user' ? '你' : (message.role === 'tool' ? '工' : 'AI');
+      const avatarLabel = message.role === 'user' ? window.I18N.t('page.chat.main.message.avatar_user', '你') : (message.role === 'tool' ? window.I18N.t('page.chat.main.message.avatar_tool', '工') : 'AI');
 
       const head = document.createElement('div');
       head.className = 'message-head';
@@ -3077,8 +3129,8 @@
         const reasoningMeta = document.createElement('div');
         reasoningMeta.className = 'reasoning-meta';
         reasoningMeta.innerHTML =
-          '<span class="reasoning-label">思维链</span>' +
-          '<span class="reasoning-state">' + (message.reasoningCollapsed ? '点击展开' : '点击收起') + '</span>';
+          '<span class="reasoning-label">' + window.I18N.t('page.chat.main.message.thinking', '思维链') + '</span>' +
+          '<span class="reasoning-state">' + (message.reasoningCollapsed ? window.I18N.t('page.chat.main.message.expand', '点击展开') : window.I18N.t('page.chat.main.message.collapse', '点击收起')) + '</span>';
 
         const reasoningCaret = document.createElement('span');
         reasoningCaret.className = 'reasoning-caret';
@@ -3122,8 +3174,8 @@
             removeBtn.className = 'message-edit-attachment-remove';
             removeBtn.dataset.editRemoveImage = image.id;
             removeBtn.dataset.index = String(index);
-            removeBtn.setAttribute('aria-label', '移除图片');
-            removeBtn.title = '移除图片';
+            removeBtn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.remove_image', '移除图片'));
+            removeBtn.title = window.I18N.t('page.chat.main.action.remove_image', '移除图片');
             removeBtn.textContent = '×';
 
             attachment.appendChild(createMessageImageCard(image));
@@ -3144,8 +3196,8 @@
             removeBtn.className = 'message-edit-attachment-remove';
             removeBtn.dataset.editRemoveFile = file.id;
             removeBtn.dataset.index = String(index);
-            removeBtn.setAttribute('aria-label', '移除文件');
-            removeBtn.title = '移除文件';
+            removeBtn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.remove_file', '移除文件'));
+            removeBtn.title = window.I18N.t('page.chat.main.action.remove_file', '移除文件');
             removeBtn.textContent = '×';
 
             attachment.appendChild(createMessageTextFileCard(file));
@@ -3166,8 +3218,8 @@
             removeBtn.className = 'message-edit-attachment-remove';
             removeBtn.dataset.editRemoveAudio = audio.id;
             removeBtn.dataset.index = String(index);
-            removeBtn.setAttribute('aria-label', '移除音频');
-            removeBtn.title = '移除音频';
+            removeBtn.setAttribute('aria-label', window.I18N.t('page.chat.main.action.remove_audio', '移除音频'));
+            removeBtn.title = window.I18N.t('page.chat.main.action.remove_audio', '移除音频');
             removeBtn.textContent = '×';
 
             attachment.appendChild(createMessageAudioCard(audio));
@@ -3192,21 +3244,21 @@
 
         const editHint = document.createElement('span');
         editHint.className = 'message-edit-hint';
-        editHint.textContent = 'Ctrl+Enter 保存 · Esc 取消 · 支持粘贴文件';
+        editHint.textContent = window.I18N.t('page.chat.main.misc.edit_hint', 'Ctrl+Enter 保存 · Esc 取消 · 支持粘贴文件');
 
         const cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
         cancelBtn.className = 'ghost-button';
         cancelBtn.dataset.messageAction = 'cancel-edit';
         cancelBtn.dataset.index = String(index);
-        cancelBtn.textContent = '取消';
+        cancelBtn.textContent = window.I18N.t('page.chat.main.action.cancel', '取消');
 
         const saveBtn = document.createElement('button');
         saveBtn.type = 'button';
         saveBtn.className = 'primary-button';
         saveBtn.dataset.messageAction = 'save-edit';
         saveBtn.dataset.index = String(index);
-        saveBtn.textContent = '保存';
+        saveBtn.textContent = window.I18N.t('page.chat.main.action.save', '保存');
 
         editActions.appendChild(editHint);
         editActions.appendChild(cancelBtn);
@@ -3283,30 +3335,30 @@
           actions.appendChild(responseSwitcher);
         }
 
-        actions.appendChild(createMessageActionButton('copy', index, '复制', [
+        actions.appendChild(createMessageActionButton('copy', index, window.I18N.t('page.chat.main.action.copy', '复制'), [
           '<rect x="9" y="9" width="11" height="11" rx="2"></rect>',
           '<path d="M6 15V6a2 2 0 0 1 2-2h9"></path>'
         ].join('')));
-        actions.appendChild(createMessageActionButton('edit', index, '编辑', [
+        actions.appendChild(createMessageActionButton('edit', index, window.I18N.t('page.chat.main.action.edit', '编辑'), [
           '<path d="M12 20h9"></path>',
           '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>'
         ].join('')));
 
         if (message.role === 'assistant') {
-          actions.appendChild(createMessageActionButton('regenerate', index, '重新生成', [
+          actions.appendChild(createMessageActionButton('regenerate', index, window.I18N.t('page.chat.main.action.regenerate', '重新生成'), [
             '<path d="M19 8a7 7 0 1 0 2 5"></path>',
             '<path d="M19 3v5h-5"></path>'
           ].join('')));
         } else if (message.role === 'user') {
-          actions.appendChild(createMessageActionButton('regenerate', index, '重新生成', [
+          actions.appendChild(createMessageActionButton('regenerate', index, window.I18N.t('page.chat.main.action.regenerate', '重新生成'), [
             '<path d="M19 8a7 7 0 1 0 2 5"></path>',
             '<path d="M19 3v5h-5"></path>'
           ].join('')));
         }
 
         const deleteLabel = message.role === 'assistant' && Array.isArray(message.responses) && message.responses.length > 1
-          ? '删除当前响应'
-          : '删除';
+          ? window.I18N.t('page.chat.main.action.delete_response', '删除当前响应')
+          : window.I18N.t('page.chat.main.action.delete', '删除');
         actions.appendChild(createMessageActionButton('delete', index, deleteLabel, [
           '<path d="M3 6h18"></path>',
           '<path d="M8 6V4h8v2"></path>',
@@ -3405,7 +3457,7 @@
       const wrap = document.createElement('div');
       wrap.className = 'message-response-switcher';
 
-      const previousBtn = createMessageActionButton('prev-response', index, '查看上一个响应',
+      const previousBtn = createMessageActionButton('prev-response', index, window.I18N.t('page.chat.main.action.view_prev', '查看上一个响应'),
         '<path d="m15 18-6-6 6-6"></path>');
       previousBtn.disabled = state.isSending || message.activeResponseIndex <= 0;
 
@@ -3413,7 +3465,7 @@
       count.className = 'message-response-count';
       count.textContent = String(message.activeResponseIndex + 1) + ' / ' + String(message.responses.length);
 
-      const nextBtn = createMessageActionButton('next-response', index, '查看下一个响应',
+      const nextBtn = createMessageActionButton('next-response', index, window.I18N.t('page.chat.main.action.view_next', '查看下一个响应'),
         '<path d="m9 18 6-6-6-6"></path>');
       nextBtn.disabled = state.isSending || message.activeResponseIndex >= message.responses.length - 1;
 
@@ -3453,7 +3505,7 @@
 
           const reasoningMeta = document.createElement('div');
           reasoningMeta.className = 'reasoning-meta';
-          reasoningMeta.innerHTML = '<span class="reasoning-label">思维链</span><span class="reasoning-state"></span>';
+          reasoningMeta.innerHTML = '<span class="reasoning-label">' + window.I18N.t('page.chat.main.message.thinking', '思维链') + '</span><span class="reasoning-state"></span>';
 
           const reasoningCaret = document.createElement('span');
           reasoningCaret.className = 'reasoning-caret';
@@ -3477,14 +3529,13 @@
         }
         reasoningHead.dataset.index = String(index);
         reasoningHead.setAttribute('aria-expanded', message.reasoningCollapsed ? 'false' : 'true');
-        reasoningState.textContent = message.reasoningCollapsed ? '点击展开' : '点击收起';
+        reasoningState.textContent = message.reasoningCollapsed ? window.I18N.t('page.chat.main.message.expand', '点击展开') : window.I18N.t('page.chat.main.message.collapse', '点击收起');
         reasoningBody.classList.toggle('hidden', !!message.reasoningCollapsed);
         if (!message.reasoningCollapsed) {
           if (message.isStreaming) {
-            appendStreamingText(reasoningBody, message.reasoning || '');
+            renderStreamingMarkdown(reasoningBody, message.reasoning || '');
           } else {
-            clearStreamingCache(reasoningBody);
-            renderRichText(reasoningBody, message.reasoning, { isStreaming: false, role: message.role });
+            finalizeStreaming(reasoningBody, message.reasoning || '', message.role);
           }
         }
       } else if (reasoningBox) {
@@ -3499,10 +3550,9 @@
           bubble.appendChild(contentDiv);
         }
         if (message.isStreaming) {
-          appendStreamingText(contentDiv, message.content || '');
+          renderStreamingMarkdown(contentDiv, message.content || '');
         } else {
-          clearStreamingCache(contentDiv);
-          renderRichText(contentDiv, message.content || '', { isStreaming: false, role: message.role });
+          finalizeStreaming(contentDiv, message.content || '', message.role);
         }
       } else if (contentDiv) {
         contentDiv.remove();
@@ -3843,24 +3893,24 @@
       }
       if (imageCount) {
         copyValue = copyValue
-          ? copyValue + '\n\n[附带 ' + imageCount + ' 张图片]'
-          : '[图片消息，共 ' + imageCount + ' 张]';
+          ? copyValue + '\n\n' + window.I18N.t('page.chat.main.copy.with_images', '[附带 {n} 张图片]').replace('{n}', imageCount)
+          : window.I18N.t('page.chat.main.copy.images_only', '[图片消息，共 {n} 张]').replace('{n}', imageCount);
       }
       if (fileCount) {
         copyValue = copyValue
-          ? copyValue + '\n\n[附带 ' + fileCount + ' 个文件]'
-          : '[文件消息，共 ' + fileCount + ' 个]';
+          ? copyValue + '\n\n' + window.I18N.t('page.chat.main.copy.with_files', '[附带 {n} 个文件]').replace('{n}', fileCount)
+          : window.I18N.t('page.chat.main.copy.files_only', '[文件消息，共 {n} 个]').replace('{n}', fileCount);
       }
       if (audioCount) {
         copyValue = copyValue
-          ? copyValue + '\n\n[附带 ' + audioCount + ' 个音频]'
-          : '[音频消息，共 ' + audioCount + ' 个]';
+          ? copyValue + '\n\n' + window.I18N.t('page.chat.main.copy.with_audio', '[附带 {n} 个音频]').replace('{n}', audioCount)
+          : window.I18N.t('page.chat.main.copy.audio_only', '[音频消息，共 {n} 个]').replace('{n}', audioCount);
       }
       try {
         await copyText(copyValue);
-        showToast('success', '已复制到剪贴板');
+        showToast('success', window.I18N.t('page.chat.main.toast.copied', '已复制到剪贴板'));
       } catch (error) {
-        showToast('error', error.message || '复制失败');
+        showToast('error', error.message || window.I18N.t('page.chat.main.toast.copy_failed', '复制失败，请手动复制'));
       }
     }
 
@@ -4006,14 +4056,14 @@
             const dataUrl = await readFileAsDataUrl(file);
             nextImages.push({
               id: makeImageId(),
-              name: file.name || '图片',
+              name: file.name || window.I18N.t('page.chat.main.message.image', '图片'),
               type: file.type || 'image/*',
               size: Number(file.size || 0),
               dataUrl
             });
             imageAdded += 1;
           } catch (error) {
-            showToast('error', error.message || '图片读取失败');
+            showToast('error', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误'));
           }
           continue;
         }
@@ -4026,14 +4076,14 @@
             const dataUrl = await readFileAsDataUrl(file);
             nextAudioFiles.push({
               id: makeAudioFileId(),
-              name: file.name || '音频',
+              name: file.name || window.I18N.t('page.chat.main.message.audio', '音频'),
               type: file.type || 'audio/*',
               size: Number(file.size || 0),
               dataUrl
             });
             audioAdded += 1;
           } catch (error) {
-            showToast('error', error.message || '音频读取失败');
+            showToast('error', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误'));
           }
           continue;
         }
@@ -4049,14 +4099,14 @@
           const text = await readFileAsText(file);
           nextTextFiles.push({
             id: makeTextFileId(),
-            name: file.name || '文件',
+              name: file.name || window.I18N.t('page.chat.main.message.file', '文件'),
             type: file.type || 'text/plain',
             size: Number(file.size || 0),
             text: String(text || '').replace(/\r\n/g, '\n')
           });
           textAdded += 1;
         } catch (error) {
-          showToast('error', error.message || '文件读取失败');
+          showToast('error', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误'));
         }
       }
 
@@ -4073,28 +4123,28 @@
       }
 
       if (imageAdded) {
-        showToast('success', '已在编辑消息中添加 ' + imageAdded + ' 张图片');
+        showToast('success', window.I18N.t('page.chat.main.file.edit_images_added', '已在编辑消息中添加 {n} 张图片').replace('{n}', imageAdded));
       }
       if (textAdded) {
-        showToast('success', '已在编辑消息中添加 ' + textAdded + ' 个文本文件');
+        showToast('success', window.I18N.t('page.chat.main.file.edit_text_files_added', '已在编辑消息中添加 {n} 个文本文件').replace('{n}', textAdded));
       }
       if (audioAdded) {
-        showToast('success', '已在编辑消息中添加 ' + audioAdded + ' 个音频文件');
+        showToast('success', window.I18N.t('page.chat.main.file.edit_audio_files_added', '已在编辑消息中添加 {n} 个音频文件').replace('{n}', audioAdded));
       }
       if (invalidCount) {
-        showToast('info', '已忽略 ' + invalidCount + ' 个不支持的文件');
+        showToast('info', window.I18N.t('page.chat.main.file.invalid_files_ignored', '已忽略 {n} 个不支持的文件').replace('{n}', invalidCount));
       }
       if (oversizedImageCount) {
-        showToast('error', oversizedImageCount + ' 张图片超过 10 MB，未添加');
+        showToast('error', window.I18N.t('page.chat.main.file.images_oversized', '{n} 张图片超过 10 MB，未添加').replace('{n}', oversizedImageCount));
       }
       if (oversizedTextCount) {
-        showToast('error', oversizedTextCount + ' 个文本文件超过 512 KB，未添加');
+        showToast('error', window.I18N.t('page.chat.main.file.text_oversized', '{n} 个文本文件超过 512 KB，未添加').replace('{n}', oversizedTextCount));
       }
       if (oversizedAudioCount) {
-        showToast('error', oversizedAudioCount + ' 个音频文件超过 25 MB，未添加');
+        showToast('error', window.I18N.t('page.chat.main.file.audio_oversized', '{n} 个音频文件超过 25 MB，未添加').replace('{n}', oversizedAudioCount));
       }
       if (imageLimitReached) {
-        showToast('info', '最多只能添加 ' + MAX_IMAGE_COUNT + ' 张图片');
+        showToast('info', window.I18N.t('page.chat.main.file.image_limit', '最多只能添加 {n} 张图片').replace('{n}', MAX_IMAGE_COUNT));
       }
     }
 
@@ -4106,7 +4156,7 @@
         return;
       }
       if (!nextContent && !getMessageImages(message).length && !getMessageTextFiles(message).length && !getMessageAudioFiles(message).length) {
-        updateStatus('error', '消息内容不能为空', '空内容');
+        updateStatus('error', window.I18N.t('page.chat.main.status.empty_message', '请输入消息或添加文件'), window.I18N.t('page.chat.main.status.empty_message_short', '空消息'));
         return;
       }
       message.content = nextContent;
@@ -4130,7 +4180,7 @@
       renderConversationList();
       renderMessages();
       persistState();
-      showToast('success', '消息已更新');
+      showToast('success', window.I18N.t('page.chat.main.toast.message_updated', '消息已更新'));
     }
 
     function switchAssistantResponse(index, offset) {
@@ -4166,14 +4216,14 @@
         return;
       }
       if (!options?.preflightChecked) {
-        const precheck = await ensureServerStateReady({ operationName: '发送请求' });
+        const precheck = await ensureServerStateReady({ operationName: window.I18N.t('page.chat.main.misc.send_request', '发送请求') });
         if (!precheck.ok) {
           return;
         }
       }
       syncRuntimeStateFromCurrentAssistant();
       if (!state.model) {
-        updateStatus('error', '请先选择模型', '未选择模型');
+        updateStatus('error', window.I18N.t('page.chat.main.status.no_model_selected', '请先选择模型'), window.I18N.t('page.chat.main.status.no_model_selected_short', '未选择模型'));
         return;
       }
 
@@ -4196,7 +4246,7 @@
           const enabledTools = mcpModule ? mcpModule.getEnabledTools(getCurrentAssistant()) : [];
           showTypingIndicator(requestModel);
           els.statusDot.classList.add('loading');
-          updateStatus('ready', '正在生成回复…', '生成中');
+          updateStatus('ready', window.I18N.t('page.chat.main.status.generating', '正在生成回复…'), window.I18N.t('page.chat.main.status.generating_short', '生成中'));
 
           const response = await fetch(CHAT_ENDPOINT, {
             method: 'POST',
@@ -4207,7 +4257,7 @@
           if (!response.ok) {
             removeTypingIndicator();
             const text = await response.text();
-            throw new Error(text || '请求失败：' + response.status);
+            throw new Error(text || window.I18N.t('page.chat.main.error.request_failed_status', '请求失败：{status}').replace('{status}', response.status));
           }
 
           const contentType = response.headers.get('content-type') || '';
@@ -4243,11 +4293,11 @@
             updateAssistantToolCalls(currentAssistantIndex, result.toolCalls);
           }
           if (!(result.content || result.reasoning || (Array.isArray(result.toolCalls) && result.toolCalls.length))) {
-            updateLastAssistantMessage('模型返回了空内容。', '', result.model || requestModel, result.timings, currentAssistantIndex);
+            updateLastAssistantMessage(window.I18N.t('page.chat.main.error.empty_response', '模型返回了空内容。'), '', result.model || requestModel, result.timings, currentAssistantIndex);
           }
 
           if (Array.isArray(result.toolCalls) && result.toolCalls.length && mcpModule && remainingToolRounds > 0) {
-            updateStatus('ready', '正在执行 MCP 工具…', '工具中');
+            updateStatus('ready', window.I18N.t('page.chat.main.status.tool_executing', '正在执行 MCP 工具…'), window.I18N.t('page.chat.main.status.tool_executing_short', '工具中'));
             const toolMessages = await mcpModule.executeToolCalls(result.toolCalls, enabledTools, {
               preparedQuery: ''
             });
@@ -4263,9 +4313,9 @@
           }
 
           if (Array.isArray(result.toolCalls) && result.toolCalls.length && remainingToolRounds <= 0) {
-            showToast('error', '工具调用轮次过多，已停止自动继续');
+            showToast('error', window.I18N.t('page.chat.main.error.tool_rounds_exceeded', '工具调用轮次过多，已停止自动继续'));
           }
-          updateStatus('ready', '回复生成完成', '已完成');
+          updateStatus('ready', window.I18N.t('page.chat.main.status.done', '回复生成完成'), window.I18N.t('page.chat.main.status.done_short', '已完成'));
           break;
         }
         } catch (error) {
@@ -4274,14 +4324,14 @@
             if (Number.isInteger(currentAssistantIndex)) {
               setAssistantResponseStreaming(currentAssistantIndex, false);
             }
-            updateStatus('ready', '已停止', '已停止');
+            updateStatus('ready', window.I18N.t('page.chat.main.status.aborted', '已停止'), window.I18N.t('page.chat.main.status.aborted_short', '已停止'));
           } else {
           if (Number.isInteger(currentAssistantIndex)) {
-            updateLastAssistantMessage('请求失败：' + (error.message || '未知错误'), '', requestModel, null, currentAssistantIndex);
+            updateLastAssistantMessage(window.I18N.t('page.chat.main.error.request_failed', '请求失败：{error}').replace('{error}', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误')), '', requestModel, null, currentAssistantIndex);
             setAssistantResponseStreaming(currentAssistantIndex, false);
           }
-          updateStatus('error', error.message || '请求失败', '请求失败');
-          showToast('error', '请求失败：' + (error.message || '未知错误'));
+          updateStatus('error', error.message || window.I18N.t('page.chat.main.status.request_failed', '请求失败'), window.I18N.t('page.chat.main.status.request_failed', '请求失败'));
+          showToast('error', window.I18N.t('page.chat.main.error.request_failed', '请求失败：{error}').replace('{error}', error.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误')));
         }
       } finally {
         state.isSending = false;
@@ -4322,7 +4372,7 @@
       } else if (message.role === 'assistant') {
         userMessageIndex = index - 1;
         if (conversation.messages[userMessageIndex]?.role !== 'user') {
-          showToast('info', '未找到对应的用户消息');
+          showToast('info', window.I18N.t('page.chat.main.status.no_user_message', '未找到对应的用户消息'));
           return;
         }
       } else {
@@ -4332,13 +4382,16 @@
       const nextMessages = conversation.messages.slice(0, assistantMessageIndex);
       const hasUserPrompt = nextMessages.some(item => item.role === 'user' && hasMessageBody(item));
       if (!hasUserPrompt) {
-        updateStatus('error', '没有可用于重试的用户消息', '无法重试');
+        updateStatus('error', window.I18N.t('page.chat.main.status.no_retry_message', '没有可用于重试的用户消息'), window.I18N.t('page.chat.main.status.no_retry_message_short', '无法重试'));
         return;
       }
 
       if (assistantMessageIndex < conversation.messages.length) {
         const assistantMessage = conversation.messages[assistantMessageIndex];
         syncAssistantMessageState(assistantMessage);
+        assistantMessage.timings = null;
+        assistantMessage.performanceText = '';
+        assistantMessage.isStreaming = true;
         assistantMessage.responses.push(createAssistantResponseDraft({
           model: state.model || assistantMessage.model,
           isStreaming: true,
@@ -4388,14 +4441,14 @@
         nextMessage.activeResponseIndex = Math.min(deleteIndex, nextMessage.responses.length - 1);
         nextMessages[index] = nextMessage;
         setConversationMessages(nextMessages);
-        showToast('info', '当前响应已删除');
+        showToast('info', window.I18N.t('page.chat.main.action.delete_response', '删除当前响应'));
         return;
       }
       const nextMessages = conversation.messages.slice();
       const removeCount = message.role === 'user' && nextMessages[index + 1]?.role === 'assistant' ? 2 : 1;
       nextMessages.splice(index, removeCount);
       setConversationMessages(nextMessages);
-      showToast('info', '消息已删除');
+      showToast('info', window.I18N.t('page.chat.main.action.delete', '删除'));
     }
 
     function isCompactLayout() {
@@ -4409,8 +4462,8 @@
         ? (state.sidebarOpen ? '×' : '☰')
         : (state.sidebarCollapsed ? '☰' : '⟨');
       els.sidebarToggleBtn.setAttribute('aria-label', compact
-        ? (state.sidebarOpen ? '关闭会话列表' : '打开会话列表')
-        : (state.sidebarCollapsed ? '显示左侧栏' : '隐藏左侧栏'));
+        ? (state.sidebarOpen ? window.I18N.t('page.chat.main.sidebar.close_list', '关闭会话列表') : window.I18N.t('page.chat.main.sidebar.open_list', '打开会话列表'))
+        : (state.sidebarCollapsed ? window.I18N.t('page.chat.main.sidebar.show_sidebar', '显示左侧栏') : window.I18N.t('page.chat.main.sidebar.hide_sidebar', '隐藏左侧栏')));
       els.sidebarToggleBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
     }
 
@@ -4472,7 +4525,7 @@
         response = await fetch(url, requestOptions);
       } catch (error) {
         if (controller && controller.signal.aborted) {
-          throw new Error('请求超时，请检查网络连接');
+          throw new Error(window.I18N.t('page.chat.main.error.request_timeout', '请求超时，请检查网络连接'));
         }
         throw error;
       } finally {
@@ -4482,7 +4535,7 @@
       }
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(text || '请求失败：' + response.status);
+        throw new Error(text || window.I18N.t('page.chat.main.error.request_failed_status', '请求失败：{status}').replace('{status}', response.status));
       }
       return response.json();
     }
@@ -4494,7 +4547,7 @@
       applySettingsInputsToState();
       const saved = await persistState({ immediate: true, showErrorToast: showSavedToast });
       if (saved && showSavedToast) {
-        showToast('success', '助手设置已保存到服务端');
+        showToast('success', window.I18N.t('page.chat.main.toast.saved', '助手设置已保存到服务端'));
       }
     }
 
@@ -4735,7 +4788,7 @@
 
     async function refreshModels() {
       applySettingsInputsToState();
-      updateStatus('', '正在刷新模型列表…', '刷新中');
+      updateStatus('', window.I18N.t('page.chat.main.status.refreshing', '正在刷新模型列表…'), window.I18N.t('page.chat.main.status.refreshing_short', '刷新中'));
       try {
         const previousModel = state.model;
         const json = await fetchJson(MODELS_ENDPOINT, { headers: getHeaders() });
@@ -4746,7 +4799,7 @@
         if (!models.length) {
           const option = document.createElement('option');
           option.value = '';
-          option.textContent = '暂无可用模型';
+          option.textContent = window.I18N.t('page.chat.main.status.no_models', '当前未发现可用模型');
           els.modelSelect.appendChild(option);
           state.model = '';
         } else {
@@ -4781,9 +4834,9 @@
         if (state.model !== previousModel) {
           persistState();
         }
-        updateStatus('ready', models.length ? '模型列表已刷新' : '当前未发现可用模型', models.length ? '已连接' : '无模型');
+        updateStatus('ready', models.length ? window.I18N.t('page.chat.main.status.refresh_done', '模型列表已刷新') : window.I18N.t('page.chat.main.status.no_models', '当前未发现可用模型'), models.length ? window.I18N.t('page.chat.main.status.refresh_done_short', '已连接') : window.I18N.t('page.chat.main.status.no_models_short', '无模型'));
       } catch (error) {
-        updateStatus('error', error.message || '连接失败', '连接失败');
+        updateStatus('error', error.message || window.I18N.t('page.chat.main.status.connection_failed_short', '连接失败'), window.I18N.t('page.chat.main.status.connection_failed_short', '连接失败'));
       }
     }
 
@@ -4796,7 +4849,7 @@
       } catch (error) {
         return;
       }
-      const precheck = await ensureServerStateReady({ operationName: '发送请求' });
+      const precheck = await ensureServerStateReady({ operationName: window.I18N.t('page.chat.main.misc.send_request', '发送请求') });
       if (!precheck.ok) {
         return;
       }
@@ -4809,11 +4862,11 @@
       const files = normalizeTextFiles(state.draftTextFiles);
       const audios = normalizeAudioFiles(state.draftAudioFiles);
       if (!prompt && !images.length && !files.length && !audios.length) {
-        updateStatus('error', '请输入消息或添加文件', '空消息');
+        updateStatus('error', window.I18N.t('page.chat.main.status.empty_message', '请输入消息或添加文件'), window.I18N.t('page.chat.main.status.empty_message_short', '空消息'));
         return;
       }
       if (!state.model) {
-        updateStatus('error', '请先选择模型', '未选择模型');
+        updateStatus('error', window.I18N.t('page.chat.main.status.no_model_selected', '请先选择模型'), window.I18N.t('page.chat.main.status.no_model_selected_short', '未选择模型'));
         return;
       }
 
@@ -4856,7 +4909,7 @@
       persistState();
       els.promptInput.focus();
       setSidebarOpen(false);
-      updateStatus('ready', '已创建新对话', '新对话');
+      updateStatus('ready', window.I18N.t('page.chat.main.status.new_conversation', '已创建新对话'), window.I18N.t('page.chat.main.status.new_conversation_short', '新对话'));
     }
 
     async function openConversation(id) {
@@ -4896,7 +4949,7 @@
       }
       setConversationLoadedMessages(conversation, []);
       conversation.updatedAt = Date.now();
-      conversation.title = '新对话';
+      conversation.title = window.I18N.t('page.chat.main.status.new_conversation_short', '新对话');
       state.editingMessageIndex = null;
       state.editingMessageDraft = null;
       state.draftImages = [];
@@ -4907,7 +4960,7 @@
       renderMessages();
       renderDraftImages();
       persistState();
-      showToast('info', '对话已清空');
+      showToast('info', window.I18N.t('page.chat.main.toast.conversation_cleared', '对话已清空'));
     }
 
     function toggleConversationMenu(id) {
@@ -4959,7 +5012,7 @@
         renderConversationList();
       }
       await persistState({ immediate: true, showErrorToast: true });
-      showToast('success', '会话已删除');
+      showToast('success', window.I18N.t('page.chat.main.toast.conversation_deleted', '会话已删除'));
     }
 
     async function exportConversation() {
@@ -4980,10 +5033,10 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = (conversation.title || '对话').replace(/[\\/:*?"<>|]/g, '_') + '.json';
+      link.download = (conversation.title || window.I18N.t('page.chat.main.misc.conversation_export', '对话')).replace(/[\\/:*?"<>|]/g, '_') + '.json';
       link.click();
       URL.revokeObjectURL(url);
-      showToast('success', '对话已导出');
+      showToast('success', window.I18N.t('page.chat.main.toast.conversation_exported', '对话已导出'));
     }
 
     function openSettings() {
@@ -5031,7 +5084,7 @@
       renderMessages();
       syncSettingsInputs();
       await persistState({ immediate: true, showErrorToast: true });
-      updateStatus('ready', '已切换到助手：' + assistant.name, '助手已切换');
+      updateStatus('ready', window.I18N.t('page.chat.main.misc.assistant_switched', '已切换到助手：{name}').replace('{name}', assistant.name), window.I18N.t('page.chat.main.misc.assistant_switched_short', '助手已切换'));
     }
 
     async function createAssistantProfile() {
@@ -5056,7 +5109,7 @@
       renderConversationList();
       syncSettingsInputs();
       await persistState({ immediate: true, showErrorToast: true });
-      showToast('success', '已创建助手：' + assistant.name);
+      showToast('success', window.I18N.t('page.chat.main.toast.assistant_created', '已创建助手：{name}').replace('{name}', assistant.name));
     }
 
     async function deleteCurrentAssistantProfile() {
@@ -5068,7 +5121,7 @@
         return;
       }
       if (state.assistants.length <= 1) {
-        showToast('error', '至少需要保留一个助手');
+        showToast('error', window.I18N.t('page.chat.main.error.min_assistants', '至少需要保留一个助手'));
         return;
       }
       const fallbackAssistant = state.assistants.find(item => item.id !== currentAssistant.id);
@@ -5077,7 +5130,7 @@
       }
       const usageCount = getAssistantUsageCount(currentAssistant.id);
       const confirmed = window.confirm(
-        '删除“' + currentAssistant.name + '”后，使用它的 ' + usageCount + ' 个会话将切换到“' + fallbackAssistant.name + '”。确定继续吗？'
+        window.I18N.t('page.chat.main.confirm.delete_assistant', '删除"{name}"后，使用它的 {n} 个会话将切换到"{fallback}"。确定继续吗？').replace('{name}', currentAssistant.name).replace('{n}', usageCount).replace('{fallback}', fallbackAssistant.name)
       );
       if (!confirmed) {
         return;
@@ -5094,7 +5147,7 @@
       renderMessages();
       syncSettingsInputs();
       await persistState({ immediate: true, showErrorToast: true });
-      showToast('success', '助手已删除');
+      showToast('success', window.I18N.t('page.chat.main.toast.assistant_deleted', '助手已删除'));
     }
 
     function bindEvents() {
@@ -5228,7 +5281,7 @@ function resetAudioRecorderUI() {
            els.audioRecorderStatus.classList.remove('visible');
          }
        if (els.audioRecorderStartBtn) {
-           els.audioRecorderStartBtn.textContent = '开始录音';
+            els.audioRecorderStartBtn.textContent = window.I18N.t('page.chat.main.composer.start_recording', '开始录音');
            els.audioRecorderStartBtn.classList.remove('is-recording');
          }
          if (els.audioRecorderComplete) {
@@ -5242,7 +5295,7 @@ function resetAudioRecorderUI() {
        async function startAudioRecording() {
            // getUserMedia requires a secure context (HTTPS, localhost, or file://)
            if (!window.isSecureContext) {
-             throw new Error('录音功能需要 HTTPS 连接，或使用 localhost / file:// 协议');
+              throw new Error(window.I18N.t('page.chat.main.misc.https_required', '录音功能需要 HTTPS 连接，或使用 localhost / file:// 协议'));
            }
            try {
              audioRecorderStream = await navigator.mediaDevices.getUserMedia({
@@ -5250,14 +5303,15 @@ function resetAudioRecorderUI() {
                video: false
              });
            } catch (err) {
-             let message = '未知错误';
-             if (err?.name === 'NotAllowedError') {
-               message = '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问';
-             } else if (err?.name === 'NotFoundError') {
-               message = '未检测到麦克风设备';
-             } else if (err?.name === 'SecurityError') {
-               message = '麦克风访问被安全策略阻止，请确保使用 HTTPS';
-             }
+              let message = window.I18N.t('page.chat.main.misc.recording_error', '未知错误');
+              if (err?.name === 'NotAllowedError') {
+                message = window.I18N.t('page.chat.main.misc.mic_permission_denied', '麦克风权限被拒绝，请在浏览器设置中允许麦克风访问');
+
+              } else if (err?.name === 'NotFoundError') {
+                message = window.I18N.t('page.chat.main.misc.mic_no_device', '未检测到麦克风设备');
+              } else if (err?.name === 'SecurityError') {
+                message = window.I18N.t('page.chat.main.misc.mic_security_error', '麦克风访问被安全策略阻止，请确保使用 HTTPS');
+              }
              throw new Error(message);
            }
 
@@ -5284,7 +5338,7 @@ function resetAudioRecorderUI() {
              els.audioRecorderStatus.classList.add('visible');
            }
            if (els.audioRecorderStartBtn) {
-             els.audioRecorderStartBtn.textContent = '停止录音';
+              els.audioRecorderStartBtn.textContent = window.I18N.t('page.chat.main.composer.stop_recording', '停止录音');
              els.audioRecorderStartBtn.classList.add('is-recording');
            }
            state.isRecording = true;
@@ -5308,7 +5362,7 @@ function resetAudioRecorderUI() {
           audioRecorderStream = null;
         }
         if (els.audioRecorderStartBtn) {
-          els.audioRecorderStartBtn.textContent = '开始录音';
+          els.audioRecorderStartBtn.textContent = window.I18N.t('page.chat.main.composer.start_recording', '开始录音');
           els.audioRecorderStartBtn.classList.remove('is-recording');
         }
         if (els.audioRecorderStatus) {
@@ -5317,7 +5371,7 @@ function resetAudioRecorderUI() {
         state.isRecording = false;
 
         if (audioRecorderBuffers.length === 0) {
-          throw new Error('录音为空');
+          throw new Error(window.I18N.t('page.chat.main.misc.recording_empty', '录音为空'));
         }
 
         const sampleRate = audioRecorderAudioCtx ? audioRecorderAudioCtx.sampleRate : 44100;
@@ -5365,7 +5419,7 @@ function resetAudioRecorderUI() {
         const dataUrl = await blobToDataUrl(wavBlob);
         state.draftAudioFiles.push({
           id: makeAudioFileId(),
-          name: '录音' + (state.draftAudioFiles.length + 1) + '.wav',
+          name: window.I18N.t('page.chat.main.misc.recording_prefix', '录音') + (state.draftAudioFiles.length + 1) + '.wav',
           type: 'audio/wav',
           size: wavBlob.size,
           dataUrl: dataUrl
@@ -5394,7 +5448,7 @@ function confirmAudioRecording() {
          } catch (err) {
            console.error('[AudioRecorder] Error:', err);
            resetAudioRecorderUI();
-           showToast('error', '录音失败: ' + (err?.message || '未知错误'), '录音错误');
+           showToast('error', window.I18N.t('page.chat.main.misc.recording_failed', '录音失败: {error}').replace('{error}', err?.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误')));
          }
        }
 
@@ -5404,7 +5458,7 @@ function confirmAudioRecording() {
          } catch (err) {
            console.error('[AudioRecorder] Error:', err);
            resetAudioRecorderUI();
-           showToast('error', '录音失败: ' + (err?.message || '未知错误'), '录音错误');
+           showToast('error', window.I18N.t('page.chat.main.misc.recording_failed', '录音失败: {error}').replace('{error}', err?.message || window.I18N.t('page.chat.main.misc.recording_error', '未知错误')));
          }
        }
 
@@ -5754,7 +5808,36 @@ function confirmAudioRecording() {
       });
     }
 
+    /* ── Theme ── */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      try { localStorage.setItem('llama-hub-theme', theme); } catch (e) {}
+      const btn = document.getElementById('themeToggleChat');
+      const hljs = document.getElementById('hljsTheme');
+      const hljsDark = document.getElementById('hljsThemeDark');
+      if (theme === 'dark') {
+        if (btn) btn.innerHTML = window.I18N.t('page.chat.main.theme.light', '☀️ 亮色模式');
+        if (hljs) hljs.disabled = true;
+        if (hljsDark) hljsDark.disabled = false;
+      } else {
+        if (btn) btn.innerHTML = window.I18N.t('page.chat.main.theme.dark', '🌙 夜间模式');
+        if (hljs) hljs.disabled = false;
+        if (hljsDark) hljsDark.disabled = true;
+      }
+    }
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+    function initTheme() {
+      const saved = (function(){ try { return localStorage.getItem('llama-hub-theme'); } catch(e){} })();
+      if (saved) { applyTheme(saved); return; }
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { applyTheme('dark'); return; }
+      applyTheme('light');
+    }
+
     async function init() {
+      initTheme();
       try {
         const resp = await fetch('/api/sys/setting', { method: 'GET' });
         const result = await resp.json();
@@ -5764,7 +5847,7 @@ function confirmAudioRecording() {
       } catch (e) {
       }
       ensureMathJax();
-      setStateLoadGuard(true, '正在从服务端同步聊天记录…');
+      setStateLoadGuard(true, window.I18N.t('page.chat.main.settings.storage_syncing', '正在从服务端同步聊天记录…'));
       if (window.ChatMcpModule?.create) {
         mcpModule = window.ChatMcpModule.create({
           state,
@@ -5792,7 +5875,7 @@ function confirmAudioRecording() {
         try {
           await mcpModule.refreshRegistry({ silentToast: true });
         } catch (error) {
-          updateStorageHint('MCP 服务列表加载失败');
+          updateStorageHint(window.I18N.t('page.chat.main.mcp.load_failed', 'MCP 服务列表加载失败'));
         }
       }
       renderConversationList();
@@ -5802,7 +5885,7 @@ function confirmAudioRecording() {
       syncSendButtonState();
       bindEvents();
       syncResponsiveLayout();
-      updateStatus('', '正在加载模型列表…', '未连接');
+      updateStatus('', window.I18N.t('page.chat.main.status.loading_models', '正在加载模型列表…'), window.I18N.t('page.chat.main.status.disconnected', '未连接'));
       await refreshModels();
     }
 

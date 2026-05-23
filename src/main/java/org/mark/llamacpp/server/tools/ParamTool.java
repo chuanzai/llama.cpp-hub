@@ -460,4 +460,30 @@ public class ParamTool {
 			return null;
 		}
 	}
+
+	/**
+	 * 从命令字符串中剔除指定 flag 及其值。
+	 * <p>
+	 * 使用纯文本正则替换，不依赖 {@code splitCmdArgs}，避免误伤 JSON 等含引号的参数。
+	 * 支持格式：
+	 * <ul>
+	 *   <li>{@code --flag value}（空格分隔，value 为一个非空白 token）</li>
+	 *   <li>{@code --flag=value}（等号分隔）</li>
+	 *   <li>{@code --flag}（无值）</li>
+	 * </ul>
+	 * </p>
+	 * @param cmd  原始命令字符串
+	 * @param flag 要剔除的 flag（含 {@code --} 前缀）
+	 * @return 剔除后的命令字符串
+	 */
+	public static String stripFlagWithValue(String cmd, String flag) {
+		if (cmd == null || cmd.isBlank() || flag == null || flag.isBlank()) {
+			return cmd;
+		}
+		// 移除 --flag value 和 --flag=value
+		String result = cmd.replaceAll("\\s*" + flag + "(?:\\s+\\S+|=\\S+)?", " ");
+		// 归并多余空格
+		result = result.replaceAll("\\s{2,}", " ").trim();
+		return result;
+	}
 }
